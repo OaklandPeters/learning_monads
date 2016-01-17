@@ -10,10 +10,12 @@ class Category(type):
 
 
 class Monoid:
-    def zero(self):
-        return self.category.zero()
+    @classmethod
+    def zero(cls):
+        return cls.category.zero()
 
     def append(self, value):
+        # return self.category.append(value)
         return self.category.append(self, value)
 
     def join(self):
@@ -41,10 +43,10 @@ class Object(Monoid):
     from objects/elements.
     """
     def f_apply(self, function):
-        return self.category.f_apply(self.category, self, function)
+        return self.category.f_apply(self, function)
 
     def a_apply(self, morphism):
-        return self.category.a_apply(self.category, self, morphism)
+        return self.category.a_apply(self, morphism)
 
 
 class Morphism(Monoid):
@@ -55,7 +57,7 @@ class Morphism(Monoid):
     @todo: Move *everything* off of ListMorphism, and into this.
     """
     def a_map(self):
-        return self.category.a_map(self.category, self)
+        return self.category.a_map(self)
 
     def __call__(self, *args, **kwargs):
         return self.a_map()(*args, **kwargs)

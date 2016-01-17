@@ -1,9 +1,4 @@
 """
-Mid-refactor:
-* translate List() functions to classmethods
-* Change references inside List methods to proxy through objects
-
-
 Next-steps:
 * Put zero/append/join on both Morphism AND Object
 * Make List() function as a constructor, with dispatching based on callable/not-callable
@@ -33,51 +28,57 @@ class List(category.Category):
             cls.append(accumulator, function(elm))
 
     """
-    # @classmethod
+    @classmethod
     def f_apply(cls, element, function):
-        accumulator = cls.zero(cls)
+        accumulator = element.zero()
         for elm in element.data:
-            accumulator = cls.append(cls, accumulator, function(elm))
+            accumulator = accumulator.append(function(elm))
+        # I don't recall if f_apply/f_map should trigger flattening/join
         # return cls.join(cls, accumulator)
         return accumulator
 
-    # @classmethod
+    @classmethod
     def f_map(cls, function):
         def wrapped(element):
-            return cls.f_apply(cls, element, function)
+            return cls.f_apply(element, function)
         return wrapped
 
+    @classmethod
     def a_apply(cls, element, morphism):
         """
         morphism is a function(s) wrapped in List
         """
-        accumulator = cls.zero(cls)
+        accumulator = element.zero()
         for func in morphism.data:
-            accumulator = cls.append(cls, accumulator, cls.f_apply(cls, element, func))
-        return cls.join(cls, accumulator)
+            accumulator = accumulator.append(element.f_apply(func))
+        return accumulator.join()
 
+    @classmethod
     def a_map(cls, morphism):
         def wrapped(element):
-            return cls.a_apply(cls, element, morphism)
+            return element.a_apply(morphism)
         return wrapped
 
+    @classmethod
     def zero(cls):
         return ListObject()
 
+    @classmethod
     def append(cls, element, value):
-        accumulator = cls.zero(cls)
+        accumulator = element.zero()
         accumulator.data = element.data + (value, )
         return accumulator
 
+    @classmethod
     def join(cls, element):
         """ ~ flatten """
-        accumulator = cls.zero(cls)
+        accumulator = element.zero()
         for elm in element.data:
             if isinstance(elm, ListBase):
                 for inner_elm in elm.data:
-                    accumulator = cls.append(cls, accumulator, inner_elm)
+                    accumulator = accumulator.append(inner_elm)
             else:
-                accumulator = cls.append(cls, accumulator, elm)
+                accumulator = accumulator.append(elm)
         return accumulator
 
 
@@ -85,8 +86,6 @@ class ListBase:
     """
     Used for pattern-recognition. All List Objects/Morphisms are instances of this.
     Should properly just be called ~~'List'~~
-
-    @todo: see what I can move from ListObject and ListMorphism, into this.
     """
     def __init__(self, *elements):
         self.data = elements
@@ -98,14 +97,12 @@ class ListBase:
 
 
 class ListObject(category.Object, ListBase, metaclass=List):
-# class ListObject(category.Object, ListBase):
     """
     A more structured version of this might be referenced simply List.Object
     """
 
 
 class ListMorphism(category.Morphism, ListBase, metaclass=List):
-# class ListMorphism(category.Morphism, ListBase):
     """
     A more structured version of this might be referenced simply List.Object
     """
@@ -118,7 +115,7 @@ import unittest
 
 class TestList(unittest.TestCase):
     def test_zero(self):
-        nul = List.zero(List)
+        nul = List.zero()
         self.assertEqual(nul.data, tuple())
 
     def test_eq(self):
@@ -196,7 +193,7 @@ class TestList(unittest.TestCase):
         repeat = lambda obj: obj+obj
         self.assertEqual(
             list_o.f_apply(repeat),
-            List.f_map(List, repeat)(list_o)            
+            List.f_map(repeat)(list_o)            
         )
 
 
