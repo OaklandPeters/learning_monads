@@ -11,6 +11,9 @@ class List(Monad):
     """
     Will probably need 1 or 2 more functions that Haskell, because of need to be able to lift both functions and variables (which must be treated seperately in Python)
     """
+    # -------------------------
+    # Core Monadic Methods
+    # -------------------------
     def bind(self, list_function: 'Callable[Element, List[Element]]') -> 'List[Element]':
         accumulator = self.zero
         for elm in self.data:
@@ -43,7 +46,9 @@ class List(Monad):
         return accumulator
 
 
-    # -------------
+    # -------------------------
+    # Non-Monadic Magic Methods
+    # -------------------------
     def __init__(self, *elements):
         self.data = elements
 
@@ -62,10 +67,20 @@ class List(Monad):
         else:
             return False
 
-    # def __contains__(self, obj):
-    #     return obj in self.data
+    def __getitem__(self, index: int):
+        return self.data[index]
 
+    def __contains__(self, obj: Any) --> Bool:
+        return obj in self.data
 
+    # --------------------------
+    # Extended Monadic-Hierarchy
+    # --------------------------
+    # ... I had forgotten about this mess of cases
+    # ... because the monad List() can wrap EITHER: functions or data
+    # it seems like there should be two versions of fmap, amap, mmap
+    # And at least one additional that is the decorator version of each
+    
 
 
 #=============
