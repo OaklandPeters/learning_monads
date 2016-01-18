@@ -46,6 +46,9 @@ class Object(Monoid):
         return self.category.f_apply(self, function)
 
     def a_apply(self, morphism):
+        """
+        a_apply(element, morphism) --> destructures morphism (such as in List, destructures into multiple functions), and fmap's each destructured func over 'element'
+        """
         return self.category.a_apply(self, morphism)
 
 
@@ -83,7 +86,7 @@ class Base:
 
 def apply_recursively(function, guard=Object):
     """
-    Helper function, makes it recurse down nested monadic structure
+    Helper function, to handle recursing down nested monadic structures,
     (such as list of lists).
 
     Intended to work with f_apply. Example:

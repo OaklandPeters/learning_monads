@@ -1,18 +1,14 @@
 """
 Next-steps:
-* Put zero/append/join on both Morphism AND Object
+* Include m_map and m_append
+* Rename: List-->ListCategory, ListBase -> List. The idea is that 'List' is used for type checking and it's constructor (eventually dispatching will be in the constructor), while ListBase/ListCategory is where the authoritative version of all of the methods is found
 * Make List() function as a constructor, with dispatching based on callable/not-callable
 * Get something to handle nesting (a_apply?)
-* EXPERIMENT: try removing the 'join' from last step of f_apply and a_apply
-* EXPERIMENT: PROBABLY MORE ACCURATE: Change Object/Morphism to proxying through self.METHOD, instead of self.category.METHOD
-* Get RECURSE: situated in category.py, *if-possible* ... assuming I can't get a_map to do it
 
-amap(function, element) --> destructure 'function', and fmap each destructured func over 'element'
-
-
-End goal:
-* New file: category.py: category.Category, category.Object, category.Morphism
-* 
+Later-steps:
+* Refactor methods on Object/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor
+* Rework so that functions that can be defined in terms of one another ARE -- inside category.Object, and category.Morphism (such as bind in terms of fmap and join)
+* Try to work in material to translate Transverable to Python (this might be fairly complicated)
 
 """
 
