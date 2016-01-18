@@ -1,6 +1,5 @@
 """
 Next-steps:
-* Include m_map and m_append
 * Rename: List-->ListCategory, ListBase -> List. The idea is that 'List' is used for type checking and it's constructor (eventually dispatching will be in the constructor), while ListBase/ListCategory is where the authoritative version of all of the methods is found
 * Make List() function as a constructor, with dispatching based on callable/not-callable
 * Get something to handle nesting (a_apply?)
@@ -119,13 +118,13 @@ class ListBase(category.Monad):
         )
 
 
-class ListObject(category.Object, ListBase, metaclass=List):
+class ListObject(category.Object, ListBase):
     """
     A more structured version of this might be referenced simply List.Object
     """
 
 
-class ListMorphism(category.Morphism, ListBase, metaclass=List):
+class ListMorphism(category.Morphism, ListBase):
     """
     A more structured version of this might be referenced simply List.Object
     """
@@ -253,7 +252,6 @@ class TestList(unittest.TestCase):
             list_o.a_apply(list_f),
             list_f.a_map()(list_o)
         )
-
 
 
 
