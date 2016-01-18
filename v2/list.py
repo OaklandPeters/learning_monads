@@ -10,6 +10,8 @@ Later-steps:
 * Rework so that functions that can be defined in terms of one another ARE -- inside category.Object, and category.Morphism (such as bind in terms of fmap and join)
 * Try to work in material to translate Transverable to Python (this might be fairly complicated)
 
+Much-later steps:
+* Rework category.py to be abstract classes (Monad, etc).
 """
 
 import category
@@ -17,12 +19,6 @@ import category
 
 class List(category.Category):
     """
-    Serious question: should these functions refer to each other directly, or through the proxy of the element?
-        Proxy:
-            accumulator.append(function(elm))
-        Direct:
-            cls.append(accumulator, function(elm))
-
     """
     @classmethod
     def f_apply(cls, element, function):
@@ -78,7 +74,7 @@ class List(category.Category):
         return accumulator
 
 
-class ListBase:
+class ListBase(category.Monoid, category.Monad):
     """
     Used for pattern-recognition. All List Objects/Morphisms are instances of this.
     Should properly just be called ~~'List'~~
@@ -90,6 +86,19 @@ class ListBase:
 
     def __iter__(self):
         return iter(self.data)
+
+    def __eq__(self, other):
+        if hasattr(other, 'category'):
+            if self.category == other.category:
+                return self.data == other.data
+        else:
+            return False
+
+    def __repr__(self):
+        return "{0}({1})".format(
+            self.__class__.__name__,
+            ", ".join(repr(elm) for elm in self.data)
+        )
 
 
 class ListObject(category.Object, ListBase, metaclass=List):

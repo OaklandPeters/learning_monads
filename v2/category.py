@@ -4,8 +4,9 @@
 #     """Placeholder"""
 
 class Category(type):
-    """Placeholder.
-    Basically CategoryBase.
+    """
+    Acts as both a metaclass, and as the authoritative location of all
+    monadic methods for a monad-category.
     """
 
 
@@ -21,24 +22,13 @@ class Monoid:
     def join(self):
         return self.category.join(self)
 
-    def __eq__(self, other):
-        if hasattr(other, 'category'):
-            if self.category == other.category:
-                return self.data == other.data
-        else:
-            return False
 
-    def __repr__(self):
-        return "{0}({1})".format(
-            self.__class__.__name__,
-            ", ".join(repr(elm) for elm in self.data)
-        )
 
-class Object(Monoid):
+class Object:
     """
-    @todo: Move *everything* off of ListObject, and into this.
     This is used to seperate Objects from Morphisms in a given class,
     since the signatures of their methods should differ.
+
     And also, we want to be able to pattern match/distinguish functions
     from objects/elements.
     """
@@ -52,8 +42,14 @@ class Object(Monoid):
         return self.category.a_apply(self, morphism)
 
 
-class Morphism(Monoid):
+class Morphism:
     """
+    This is used to seperate Objects from Morphisms in a given class,
+    since the signatures of their methods should differ.
+
+    And also, we want to be able to pattern match/distinguish functions
+    from objects/elements.
+
     f_map is not meaningfully defined for this, because f_map expects
     to take a bare *single* function.
 
@@ -65,13 +61,8 @@ class Morphism(Monoid):
     def __call__(self, *args, **kwargs):
         return self.a_map()(*args, **kwargs)
 
-    def __repr__(self):
-        return "{0}({1})".format(
-            self.__class__.__name__,
-            ", ".join(repr(elm) for elm in self.data)
-        )
 
-class Base:
+class Monad:
     """
     This should be an abstract
     """
@@ -82,6 +73,10 @@ class Base:
     #@abstractproperty
     def category(self):
         return NotImplemented
+
+    @classmethod
+    def f_map(cls, function):
+        return self.category.f_map(function)
 
 
 def apply_recursively(function, guard=Object):
