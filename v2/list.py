@@ -52,6 +52,24 @@ class List(category.Category):
         return wrapped
 
     @classmethod
+    def m_apply(cls, element, constructor):
+        """
+        Basically Haskell's 'bind'
+        In this context, a constructor means a function taking
+        arguments from the domain category, into the monad's category.
+        constructor::(a -> m b)
+        """
+        return element.f_apply(constructor).join()
+
+    @classmethod
+    def m_map(cls, constructor):
+        """
+        """
+        def wrapped(element):
+            return element.m_apply(constructor)
+        return wrapped
+
+    @classmethod
     def zero(cls):
         return ListObject()
 
@@ -74,7 +92,7 @@ class List(category.Category):
         return accumulator
 
 
-class ListBase(category.Monoid, category.Monad):
+class ListBase(category.Monad):
     """
     Used for pattern-recognition. All List Objects/Morphisms are instances of this.
     Should properly just be called ~~'List'~~
@@ -161,7 +179,7 @@ class TestList(unittest.TestCase):
             tuple([add2(elm) for elm in nums])
         )
 
-    def test_doubler(self):
+    def test_constructor(self):
         """Different type signature of function
         constructor function::(a -> m b)
         """
@@ -170,8 +188,32 @@ class TestList(unittest.TestCase):
         list_o = ListObject(*nums)
         result = list_o.f_apply(double)
         self.assertEqual(
-            result.data,
-            (ListObject(-1, 3), ListObject(0, 4), ListObject(1, 5))
+            result,
+            ListObject(ListObject(-1, 3), ListObject(0, 4), ListObject(1, 5))
+        )
+
+    def test_m_apply(self):
+        nums = (1, 2, 3)
+        double = lambda obj: ListObject(obj-2, obj+2)
+        list_o = ListObject(*nums)
+        result = list_o.f_apply(double)
+        bound = list_o.m_apply(double)
+        self.assertEqual(
+            bound,
+            ListObject(-1, 3, 0, 4, 1, 5)
+        )
+        self.assertEqual(
+            result.join(),
+            bound
+        )
+
+    def test_m_map(self):
+        nums = (1, 2, 3)
+        list_o = ListObject(*nums)
+        double = lambda obj: ListObject(obj-2, obj+2)
+        self.assertEqual(
+            list_o.m_apply(double),
+            List.m_map(double)(list_o),
         )
 
     def test_nested(self):

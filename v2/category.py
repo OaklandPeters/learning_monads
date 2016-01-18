@@ -41,6 +41,15 @@ class Object:
         """
         return self.category.a_apply(self, morphism)
 
+    def m_apply(self, constructor):
+        """
+        Basically Haskell's 'bind'
+        In this context, a constructor means a function taking
+        arguments from the domain category, into the monad's category.
+        constructor::(a -> m b)
+        """
+        return self.category.m_apply(self, constructor)
+
 
 class Morphism:
     """
@@ -50,8 +59,8 @@ class Morphism:
     And also, we want to be able to pattern match/distinguish functions
     from objects/elements.
 
-    f_map is not meaningfully defined for this, because f_map expects
-    to take a bare *single* function.
+    f_map and a_map are not meaningfully defined for this, because f_map/m_map
+    expect to take a bare (non-wrapped) *single* function.
 
     @todo: Move *everything* off of ListMorphism, and into this.
     """
@@ -62,7 +71,7 @@ class Morphism:
         return self.a_map()(*args, **kwargs)
 
 
-class Monad:
+class Monad(Monoid):
     """
     This should be an abstract
     """
