@@ -88,3 +88,26 @@ class MyMonad:
         ::(m m a) -> (m a)
         """
         pass
+
+class MonadSugar:
+    def __add__(self, other):
+        return self.append(other)
+    def __invert__(self):
+        """
+        This is speculative. But an unary operator version for 'fmap'.
+        Basically 'decorate':
+            wrapped_function = ~my_morphism(my_func)
+        """
+    @classmethod
+    def wrap(cls, function):
+        """
+        Sugar for decoration
+        @List.wrap
+        def myfunction(*args, **kwargs):
+            pass
+
+        ... should probably have a method-friendly one too...
+        @List.method_wrap
+        def mymethod(self, *args, **kwargs):
+        """
+        return cls(function).f_map()
