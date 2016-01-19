@@ -1,17 +1,17 @@
 """
 Next-steps:
-
-Later-steps:
-* Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor
+* Make category.Category abstract, and define what functions it can, in terms of one another.
+* Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor. Requires some notion of how I want functor/applicative to be used.
 * Rework so that functions that can be defined in terms of one another ARE -- inside category.Element, and category.Morphism (such as bind in terms of fmap and join)
 * Try to work in material to translate Transverable to Python (this might be fairly complicated)
+* Consider whether it is a good idea to have Monad.__new__ dispatch on Callable - which might not be true for all Categories (ex. in Function category, the Elements are also Callable)
+** Possible fix: give CategoryBase a 'Domain' or some other checker function that can be used.
+** Alternately... just accept that it's not true in general, although it's useful.
 
 Much-later steps:
 * Rework category.py to be abstract classes (Monad, etc).
 * Rework to try to simplify the hierarchy, to merge ListCategory and List
 """
-import typing
-
 import category
 from category import classproperty
 
@@ -97,8 +97,6 @@ class List(category.Monad):
     def __init__(self, *elements):
         self.data = elements
 
-    category = ListCategory
-
     @classproperty
     def Category(cls):
         return ListCategory
@@ -115,7 +113,7 @@ class List(category.Monad):
         return iter(self.data)
 
     def __eq__(self, other):
-        if hasattr(other, 'category'):
+        if hasattr(other, 'Category'):
             if self.Category == other.Category:
                 return self.data == other.data
         else:
@@ -180,13 +178,9 @@ class TestList(unittest.TestCase):
     def test_call(self):
         nums = (1, 2, 3)
         add2 = lambda num: num+2
-        list_o = ListElement(*nums)
         list_f = ListMorphism(add2)
-        result = list_f(list_o)
-        self.assertEqual(
-            result.data,
-            tuple([add2(elm) for elm in nums])
-        )
+        result = list_f(*nums)
+        self.assertEqual(result, ListElement(3, 4, 5))
 
     def test_constructor(self):
         """Different type signature of function
@@ -277,8 +271,7 @@ class TestList(unittest.TestCase):
         list_o = List('aaa', 'bbb')
         list_f = List(sorted)
         self.assertIsInstance(list_o, ListElement)
-        self.assertIsInstance(list_f, ListMorphism)
-
+        self.assertIsInstance(list_f, ListMorphism)        
 
 if __name__ == "__main__":
     unittest.main()

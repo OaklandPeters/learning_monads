@@ -106,8 +106,8 @@ class Morphism(CategoryBase):
     def a_map(self):
         return self.Category.a_map(self)
 
-    def __call__(self, *args, **kwargs):
-        return self.a_map()(*args, **kwargs)
+    def __call__(self, *args):
+        return self.a_map()(self.Element(*args))
 
 
 class Monad(Monoid):
