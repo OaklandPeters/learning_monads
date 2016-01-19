@@ -1,11 +1,9 @@
 """
 Next-steps:
-* Rename Object --> Element (in list.py and category.py)
-* Refactor property name to uppercase: '.category' --> '.Category'
 
 Later-steps:
-* Refactor methods on Object/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor
-* Rework so that functions that can be defined in terms of one another ARE -- inside category.Object, and category.Morphism (such as bind in terms of fmap and join)
+* Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor
+* Rework so that functions that can be defined in terms of one another ARE -- inside category.Element, and category.Morphism (such as bind in terms of fmap and join)
 * Try to work in material to translate Transverable to Python (this might be fairly complicated)
 
 Much-later steps:
@@ -71,7 +69,7 @@ class ListCategory(category.Category):
 
     @classmethod
     def zero(cls):
-        return ListObject()
+        return ListElement()
 
     @classmethod
     def append(cls, element, value):
@@ -106,8 +104,8 @@ class List(category.Monad):
         return ListCategory
 
     @classproperty
-    def Object(cls):
-        return ListObject
+    def Element(cls):
+        return ListElement
 
     @classproperty
     def Morphism(cls):
@@ -118,7 +116,7 @@ class List(category.Monad):
 
     def __eq__(self, other):
         if hasattr(other, 'category'):
-            if self.category == other.category:
+            if self.Category == other.Category:
                 return self.data == other.data
         else:
             return False
@@ -130,15 +128,15 @@ class List(category.Monad):
         )
 
 
-class ListObject(category.Object, List):
+class ListElement(category.Element, List):
     """
-    A more structured version of this might be referenced simply List.Object
+    A more structured version of this might be referenced simply List.Element
     """
 
 
 class ListMorphism(category.Morphism, List):
     """
-    A more structured version of this might be referenced simply List.Object
+    A more structured version of this might be referenced simply List.Element
     """
 
 
@@ -148,23 +146,19 @@ class ListMorphism(category.Morphism, List):
 import unittest
 
 class TestList(unittest.TestCase):
-    def test_a(self):
-        thing = List('a')
-
-
     def test_zero(self):
         nul = ListCategory.zero()
         self.assertEqual(nul.data, tuple())
 
     def test_eq(self):
-        one = ListObject(3, 4, 5)
-        two = ListObject(*[elm+2 for elm in (1, 2, 3)])
+        one = ListElement(3, 4, 5)
+        two = ListElement(*[elm+2 for elm in (1, 2, 3)])
         self.assertEqual(one, two)
 
     def test_f_apply(self):
         nums = (1, 2, 3)
         add2 = lambda num: num + 2
-        list_o = ListObject(*nums)
+        list_o = ListElement(*nums)
         list_f = ListMorphism(add2)
         result = list_o.f_apply(add2)
         self.assertEqual(
@@ -175,7 +169,7 @@ class TestList(unittest.TestCase):
     def test_a_map(self):
         nums = (1, 2, 3)
         add2 = lambda num: num + 2
-        list_o = ListObject(*nums)
+        list_o = ListElement(*nums)
         list_f = ListMorphism(add2)
         result = list_f.a_map()(list_o)
         self.assertEqual(
@@ -186,7 +180,7 @@ class TestList(unittest.TestCase):
     def test_call(self):
         nums = (1, 2, 3)
         add2 = lambda num: num+2
-        list_o = ListObject(*nums)
+        list_o = ListElement(*nums)
         list_f = ListMorphism(add2)
         result = list_f(list_o)
         self.assertEqual(
@@ -199,23 +193,23 @@ class TestList(unittest.TestCase):
         constructor function::(a -> m b)
         """
         nums = (1, 2, 3)
-        double = lambda obj: ListObject(obj-2, obj+2)
-        list_o = ListObject(*nums)
+        double = lambda obj: ListElement(obj-2, obj+2)
+        list_o = ListElement(*nums)
         result = list_o.f_apply(double)
         self.assertEqual(
             result,
-            ListObject(ListObject(-1, 3), ListObject(0, 4), ListObject(1, 5))
+            ListElement(ListElement(-1, 3), ListElement(0, 4), ListElement(1, 5))
         )
 
     def test_m_apply(self):
         nums = (1, 2, 3)
-        double = lambda obj: ListObject(obj-2, obj+2)
-        list_o = ListObject(*nums)
+        double = lambda obj: ListElement(obj-2, obj+2)
+        list_o = ListElement(*nums)
         result = list_o.f_apply(double)
         bound = list_o.m_apply(double)
         self.assertEqual(
             bound,
-            ListObject(-1, 3, 0, 4, 1, 5)
+            ListElement(-1, 3, 0, 4, 1, 5)
         )
         self.assertEqual(
             result.join(),
@@ -224,34 +218,34 @@ class TestList(unittest.TestCase):
 
     def test_m_map(self):
         nums = (1, 2, 3)
-        list_o = ListObject(*nums)
-        double = lambda obj: ListObject(obj-2, obj+2)
+        list_o = ListElement(*nums)
+        double = lambda obj: ListElement(obj-2, obj+2)
         self.assertEqual(
             list_o.m_apply(double),
             ListCategory.m_map(double)(list_o),
         )
 
     def test_nested(self):
-        list_nested = ListObject(1, 2, ListObject(3, 4))
+        list_nested = ListElement(1, 2, ListElement(3, 4))
         add2 = lambda num: num+2
         self.assertRaises(TypeError,
             lambda : list_nested.f_apply(add2)
         )
         self.assertEqual(
             list_nested.f_apply(category.apply_recursively(add2)),
-            ListObject(3, 4, ListObject(5, 6))
+            ListElement(3, 4, ListElement(5, 6))
         )
     
     def test_a_apply(self):
-        list_o = ListObject(1, 2, 3)
+        list_o = ListElement(1, 2, 3)
         list_f = ListMorphism(lambda num: num + 2, lambda num: num - 2)
         self.assertEqual(
             list_o.a_apply(list_f),
-            ListObject(3, 4, 5, -1, 0, 1)
+            ListElement(3, 4, 5, -1, 0, 1)
         )
 
     def test_compare_f_map_to_f_apply(self):
-        list_o = ListObject("a", "bb", "ccc")
+        list_o = ListElement("a", "bb", "ccc")
         repeat = lambda obj: obj+obj
         self.assertEqual(
             list_o.f_apply(repeat),
@@ -260,7 +254,7 @@ class TestList(unittest.TestCase):
 
 
     def test_compare_a_map_to_a_apply(self):
-        list_o = ListObject(3, 4, 5)
+        list_o = ListElement(3, 4, 5)
         list_f = ListMorphism(lambda num: num + 2,
                               lambda num: num - 2,
                               lambda num: num * 3)
@@ -270,19 +264,19 @@ class TestList(unittest.TestCase):
         )
 
     def test_isinstance(self):
-        list_o = ListObject('aaa', 'bbb')
+        list_o = ListElement('aaa', 'bbb')
         list_f = ListMorphism(sorted)
         self.assertIsInstance(list_o, List)
-        self.assertIsInstance(list_o, ListObject)
+        self.assertIsInstance(list_o, ListElement)
         self.assertNotIsInstance(list_o, ListMorphism)
         self.assertIsInstance(list_f, List)
         self.assertIsInstance(list_f, ListMorphism)
-        self.assertNotIsInstance(list_f, ListObject)
+        self.assertNotIsInstance(list_f, ListElement)
 
     def test_list_constructor_dispatch(self):
         list_o = List('aaa', 'bbb')
         list_f = List(sorted)
-        self.assertIsInstance(list_o, ListObject)
+        self.assertIsInstance(list_o, ListElement)
         self.assertIsInstance(list_f, ListMorphism)
 
 

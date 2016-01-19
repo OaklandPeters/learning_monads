@@ -39,43 +39,46 @@ class CategoryBase:
 
     @abstractproperty
     @classproperty
-    def Object(self) -> 'Object':
+    def Element(self) -> 'Element':
         return NotImplemented
 
     def in_category(self, category):
-        return issubclass(self.category, category)
+        return issubclass(self.Category, category)
 
 
 class Monoid(CategoryBase):
     @classmethod
     def zero(cls):
-        return cls.category.zero()
+        return cls.Category.zero()
 
     def append(self, value):
-        # return self.category.append(value)
-        return self.category.append(self, value)
+        # return self.Category.append(value)
+        return self.Category.append(self, value)
 
     def join(self):
-        return self.category.join(self)
+        return self.Category.join(self)
 
 
 
-class Object(CategoryBase):
+class Element(CategoryBase):
     """
-    This is used to seperate Objects from Morphisms in a given class,
+    The 'object's within a category. Called Element (rather than 'object') to
+    prevent colliding with Python's builtin 'object'.
+
+    This class is used to seperate Elements from Morphisms in a given class,
     since the signatures of their methods should differ.
 
     And also, we want to be able to pattern match/distinguish functions
     from objects/elements.
     """
     def f_apply(self, function):
-        return self.category.f_apply(self, function)
+        return self.Category.f_apply(self, function)
 
     def a_apply(self, morphism):
         """
         a_apply(element, morphism) --> destructures morphism (such as in List, destructures into multiple functions), and fmap's each destructured func over 'element'
         """
-        return self.category.a_apply(self, morphism)
+        return self.Category.a_apply(self, morphism)
 
     def m_apply(self, constructor):
         """
@@ -84,12 +87,12 @@ class Object(CategoryBase):
         arguments from the domain category, into the monad's category.
         constructor::(a -> m b)
         """
-        return self.category.m_apply(self, constructor)
+        return self.Category.m_apply(self, constructor)
 
 
 class Morphism(CategoryBase):
     """
-    This is used to seperate Objects from Morphisms in a given class,
+    This is used to seperate Elements from Morphisms in a given class,
     since the signatures of their methods should differ.
 
     And also, we want to be able to pattern match/distinguish functions
@@ -101,7 +104,7 @@ class Morphism(CategoryBase):
     @todo: Move *everything* off of ListMorphism, and into this.
     """
     def a_map(self):
-        return self.category.a_map(self)
+        return self.Category.a_map(self)
 
     def __call__(self, *args, **kwargs):
         return self.a_map()(*args, **kwargs)
@@ -113,57 +116,45 @@ class Monad(Monoid):
     """
     def __new__(cls, *elements):
         """
-        Dispatches to Morphism/Object classes where possible,
+        Dispatches to Morphism/Element classes where possible,
         as the Monad is not meant to be directly instantiatable.
-        Requires instantiated Morphism and Object class properties.
+        Requires instantiated Morphism and Element class properties.
         """
-        if issubclass(cls, Object) or issubclass(cls, Morphism):
+        if issubclass(cls, Element) or issubclass(cls, Morphism):
             self = object.__new__(cls)
         else:
             # Calls to constructor of List itself should dispatch
             if all(isinstance(elm, typing.Callable) for elm in elements):
                 self = object.__new__(cls.Morphism)
             else:
-                self = object.__new__(cls.Object)
+                self = object.__new__(cls.Element)
         self.__init__(*elements)
         return self
 
 
-    #@abstractmethod
+    @abstractmethod
     def __init__(self, *elements):
         return NotImplemented
 
-    #@abstractproperty
-    #def Category(self):
-    #    return NotImplemented
-
-    #@abstractproperty
-    #def Morphism(cls):
-    #   return NotImplemented
-
-    #@abstractproperty
-    #def Object(cls):
-    #   return NotImplemented
-
     @classmethod
     def f_map(cls, function):
-        return self.category.f_map(function)
+        return self.Category.f_map(function)
 
     @classmethod
     def m_map(cls, constructor):
-        return self.category.m_map(constructor)
+        return self.Category.m_map(constructor)
 
 
-def apply_recursively(function, guard=Object):
+def apply_recursively(function, guard=Element):
     """
     Helper function, to handle recursing down nested monadic structures,
     (such as list of lists).
 
     Intended to work with f_apply. Example:
     > list_nested.f_apply(recurse(add2))
-    > list_nested = ListObject(1, 2, ListObject(3, 4))
+    > list_nested = ListElement(1, 2, ListElement(3, 4))
     > add2 = lambda num: num+2
-    ListObject(3, 4, ListObject(5, 6))
+    ListElement(3, 4, ListElement(5, 6))
     """
     def wrapper(obj):
         if isinstance(obj, guard):
