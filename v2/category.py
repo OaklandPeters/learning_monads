@@ -1,4 +1,5 @@
 
+import typing
 
 # class CategoryMeta(type):
 #     """Placeholder"""
@@ -75,17 +76,47 @@ class Monad(Monoid):
     """
     This should be an abstract
     """
+    def __new__(cls, *elements):
+        """
+        Dispatches to Morphism/Object classes where possible,
+        as the Monad is not meant to be directly instantiatable.
+        Requires instantiated Morphism and Object class properties.
+        """
+        if issubclass(cls, Object) or issubclass(cls, Morphism):
+            self = object.__new__(cls)
+        else:
+            # Calls to constructor of List itself should dispatch
+            if all(isinstance(elm, typing.Callable) for elm in elements):
+                self = object.__new__(cls.Morphism)
+            else:
+                self = object.__new__(cls.Object)
+        self.__init__(*elements)
+        return self
+
+
     #@abstractmethod
     def __init__(self, *elements):
         return NotImplemented
 
     #@abstractproperty
-    def category(self):
-        return NotImplemented
+    #def Category(self):
+    #    return NotImplemented
+
+    #@abstractproperty
+    #def Morphism(cls):
+    #   return NotImplemented
+
+    #@abstractproperty
+    #def Object(cls):
+    #   return NotImplemented
 
     @classmethod
     def f_map(cls, function):
         return self.category.f_map(function)
+
+    @classmethod
+    def m_map(cls, constructor):
+        return self.category.m_map(constructor)
 
 
 def apply_recursively(function, guard=Object):
@@ -105,3 +136,12 @@ def apply_recursively(function, guard=Object):
         else:
             return function(obj)
     return wrapper
+
+
+class classproperty(object):
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)

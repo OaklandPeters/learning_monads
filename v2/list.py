@@ -1,6 +1,6 @@
 """
 Next-steps:
-* Rename: List-->ListCategory, ListBase -> List. The idea is that 'List' is used for type checking and it's constructor (eventually dispatching will be in the constructor), while ListBase/ListCategory is where the authoritative version of all of the methods is found
+* Check/test typechecking: isinstance(, List)
 * Make List() function as a constructor, with dispatching based on callable/not-callable
 * Get something to handle nesting (a_apply?)
 
@@ -12,11 +12,12 @@ Later-steps:
 Much-later steps:
 * Rework category.py to be abstract classes (Monad, etc).
 """
+import typing
 
 import category
+from category import classproperty
 
-
-class List(category.Category):
+class ListCategory(category.Category):
     """
     """
     @classmethod
@@ -83,7 +84,7 @@ class List(category.Category):
         """ ~ flatten """
         accumulator = element.zero()
         for elm in element.data:
-            if isinstance(elm, ListBase):
+            if isinstance(elm, List):
                 for inner_elm in elm.data:
                     accumulator = accumulator.append(inner_elm)
             else:
@@ -91,15 +92,22 @@ class List(category.Category):
         return accumulator
 
 
-class ListBase(category.Monad):
+class List(category.Monad):
     """
-    Used for pattern-recognition. All List Objects/Morphisms are instances of this.
-    Should properly just be called ~~'List'~~
+    Used for type-checking, pattern recognition, and it's constructor
     """
     def __init__(self, *elements):
         self.data = elements
 
-    category = List
+    category = ListCategory
+
+    @classproperty
+    def Object(cls):
+        return ListObject
+
+    @classproperty
+    def Morphism(cls):
+        return ListMorphism
 
     def __iter__(self):
         return iter(self.data)
@@ -118,13 +126,13 @@ class ListBase(category.Monad):
         )
 
 
-class ListObject(category.Object, ListBase):
+class ListObject(category.Object, List):
     """
     A more structured version of this might be referenced simply List.Object
     """
 
 
-class ListMorphism(category.Morphism, ListBase):
+class ListMorphism(category.Morphism, List):
     """
     A more structured version of this might be referenced simply List.Object
     """
@@ -136,8 +144,12 @@ class ListMorphism(category.Morphism, ListBase):
 import unittest
 
 class TestList(unittest.TestCase):
+    def test_a(self):
+        thing = List('a')
+
+
     def test_zero(self):
-        nul = List.zero()
+        nul = ListCategory.zero()
         self.assertEqual(nul.data, tuple())
 
     def test_eq(self):
@@ -212,7 +224,7 @@ class TestList(unittest.TestCase):
         double = lambda obj: ListObject(obj-2, obj+2)
         self.assertEqual(
             list_o.m_apply(double),
-            List.m_map(double)(list_o),
+            ListCategory.m_map(double)(list_o),
         )
 
     def test_nested(self):
@@ -239,7 +251,7 @@ class TestList(unittest.TestCase):
         repeat = lambda obj: obj+obj
         self.assertEqual(
             list_o.f_apply(repeat),
-            List.f_map(repeat)(list_o)            
+            ListCategory.f_map(repeat)(list_o)            
         )
 
 
@@ -253,6 +265,21 @@ class TestList(unittest.TestCase):
             list_f.a_map()(list_o)
         )
 
+    def test_isinstance(self):
+        list_o = ListObject('aaa', 'bbb')
+        list_f = ListMorphism(sorted)
+        self.assertIsInstance(list_o, List)
+        self.assertIsInstance(list_o, ListObject)
+        self.assertNotIsInstance(list_o, ListMorphism)
+        self.assertIsInstance(list_f, List)
+        self.assertIsInstance(list_f, ListMorphism)
+        self.assertNotIsInstance(list_f, ListObject)
+
+    def test_list_constructor_dispatch(self):
+        list_o = List('aaa', 'bbb')
+        list_f = List(sorted)
+        self.assertIsInstance(list_o, ListObject)
+        self.assertIsInstance(list_f, ListMorphism)
 
 
 if __name__ == "__main__":
