@@ -1,8 +1,19 @@
 
 import typing
+from abc import abstractmethod, abstractproperty
 
 # class CategoryMeta(type):
 #     """Placeholder"""
+
+
+class classproperty(object):
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)
+
 
 class Category(type):
     """
@@ -11,7 +22,31 @@ class Category(type):
     """
 
 
-class Monoid:
+class CategoryBase:
+    """
+    Abstract-class for objects in a category-theoretic context. Allows
+    various entities within a single category to refer to one another.
+    """
+    @abstractproperty
+    @classproperty
+    def Category(self) -> Category:
+        return NotImplemented
+
+    @abstractproperty
+    @classproperty
+    def Morphism(self) -> 'Morphism':
+        return NotImplemented
+
+    @abstractproperty
+    @classproperty
+    def Object(self) -> 'Object':
+        return NotImplemented
+
+    def in_category(self, category):
+        return issubclass(self.category, category)
+
+
+class Monoid(CategoryBase):
     @classmethod
     def zero(cls):
         return cls.category.zero()
@@ -25,7 +60,7 @@ class Monoid:
 
 
 
-class Object:
+class Object(CategoryBase):
     """
     This is used to seperate Objects from Morphisms in a given class,
     since the signatures of their methods should differ.
@@ -52,7 +87,7 @@ class Object:
         return self.category.m_apply(self, constructor)
 
 
-class Morphism:
+class Morphism(CategoryBase):
     """
     This is used to seperate Objects from Morphisms in a given class,
     since the signatures of their methods should differ.
@@ -136,12 +171,3 @@ def apply_recursively(function, guard=Object):
         else:
             return function(obj)
     return wrapper
-
-
-class classproperty(object):
-
-    def __init__(self, fget):
-        self.fget = fget
-
-    def __get__(self, owner_self, owner_cls):
-        return self.fget(owner_cls)

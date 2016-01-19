@@ -1,8 +1,7 @@
 """
 Next-steps:
-* Check/test typechecking: isinstance(, List)
-* Make List() function as a constructor, with dispatching based on callable/not-callable
-* Get something to handle nesting (a_apply?)
+* Rename Object --> Element (in list.py and category.py)
+* Refactor property name to uppercase: '.category' --> '.Category'
 
 Later-steps:
 * Refactor methods on Object/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor
@@ -11,6 +10,7 @@ Later-steps:
 
 Much-later steps:
 * Rework category.py to be abstract classes (Monad, etc).
+* Rework to try to simplify the hierarchy, to merge ListCategory and List
 """
 import typing
 
@@ -100,6 +100,10 @@ class List(category.Monad):
         self.data = elements
 
     category = ListCategory
+
+    @classproperty
+    def Category(cls):
+        return ListCategory
 
     @classproperty
     def Object(cls):
