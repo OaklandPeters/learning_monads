@@ -1,4 +1,17 @@
+"""
+Resolution: 
+    allow specifying Zero, Append, Join independently for
+Morphisms in a category.
 
+Zero --> Identity
+Append --> Compose
+Join --> Combine
+
+.. OR NOT
+because the normal morphisms for that Monad PLUS the rules for applicative, imply the nonsense
+
+This all relates to needing 'Compose', which I want to use for defining '>>'
+"""
 import typing
 from abc import abstractmethod, abstractproperty
 
@@ -109,29 +122,16 @@ class Morphism(CategoryBase):
     def __call__(self, *args):
         return self.a_map()(self.Element(*args))
 
+    def compose(self):
+        """
+        This function is not normally *explicitly* associated with 
+        """
+
 
 class Monad(Monoid):
     """
     This should be an abstract
     """
-    def __new__(cls, *elements):
-        """
-        Dispatches to Morphism/Element classes where possible,
-        as the Monad is not meant to be directly instantiatable.
-        Requires instantiated Morphism and Element class properties.
-        """
-        if issubclass(cls, Element) or issubclass(cls, Morphism):
-            self = object.__new__(cls)
-        else:
-            # Calls to constructor of List itself should dispatch
-            if all(isinstance(elm, typing.Callable) for elm in elements):
-                self = object.__new__(cls.Morphism)
-            else:
-                self = object.__new__(cls.Element)
-        self.__init__(*elements)
-        return self
-
-
     @abstractmethod
     def __init__(self, *elements):
         return NotImplemented
