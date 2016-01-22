@@ -126,8 +126,7 @@ class List(category.Monad):
             if (issubclass(self.Category, other.Category)
                 or issubclass(other.Category, self.Category)):
                 return self.data == other.data
-        else:
-            return False
+        return False
 
     def __repr__(self):
         return "{0}({1})".format(
