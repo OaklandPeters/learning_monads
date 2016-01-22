@@ -1,5 +1,6 @@
 """
 Next-steps:
+* FIX: append --> append(element, element), as in Haskell. Will work more list
 * Rework so that functions that can be defined in terms of one another ARE -- inside category.Element, and category.Morphism (such as bind in terms of fmap and join)
 * new class: 'WellBehavedMonad', which provides implementation of a number of conveniences, including the dispatching __new__, __repr__ based on .data, .iter, 
 * IMPORTANT: decide what/how to do with 'compose' for morphisms. Possible: zero==identity, append==compose, join==collapse
