@@ -276,6 +276,30 @@ class TestList(unittest.TestCase):
             ListElement(3, 4, 5, -1, 0, 1)
         )
 
+    def test_a_apply_empty(self):
+
+        list_o = ListElement(1, 2, 3)
+        empty_o = ListElement()
+        list_f = ListMorphism(lambda num: num + 2, lambda num: num - 2)
+        empty_f = ListElement()
+
+        self.assertEqual(
+            list_o.a_apply(list_f),
+            List(3, 4, 5, -1, 0, 1)
+        )
+        self.assertEqual(
+            list_o.a_apply(empty_f),
+            List(),
+        )
+        self.assertEqual(
+            empty_o.a_apply(list_f),
+            List(),
+        )
+        self.assertEqual(
+            empty_o.a_apply(empty_f),
+            List(),
+        )
+
     def test_compare_f_map_to_f_apply(self):
         list_o = ListElement("a", "bb", "ccc")
         repeat = lambda obj: obj+obj
