@@ -1,11 +1,15 @@
 """
 Next-steps:
+* Change Nothing to be Just with .data = (), since this hooks the behavior of zero/append/just to the behavior of tuples
+@todo: rewrite join as a reduction. Write 'first'/'last' as arguments into join, taking advantage of chain on .default
 * Change category.append : element, element
 * Change list.append
-* 
 * simplify conditional logic in Maybe.__new__. Preferablly by dispatching.
 * Simplify structure, by making Nothing simply Maybe.zero. Have to change all statements checking, 'isinstance(element, Nothing)'
 
+
+Later-steps:
+* Change default to use _NotPassed
 
 PROBLEM:
 This doesn't really let me write the chain of tries, where you take the first valid one.
@@ -50,7 +54,7 @@ class MaybeCategory:
         return Nothing()
 
     @classmethod
-    def append(cls, element, value):
+    def append(cls, left, right):
         """
         Hard to understand for elements which are Just
         Just(12).append('ya')  .... doesn't make sense to me
@@ -63,11 +67,28 @@ class MaybeCategory:
           m `mappend` Nothing = m
           Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
         """
-        if isinstance(element, Nothing):
+
+        if isinstance(left, Nothing) and isinstance(right, Nothing):
+            return Nothing()
+        elif isinstance(left, Nothing) and isinstance(right, Nothing):
+            return Just(right.data)
+        elif not isinstance(left, Nothing) and isinstance(right, Nothing):
+            return Just(left.data)
+        elif not isinstance(left, Nothing) and not isinstance(right, Nothing):
+            return Just(left.data, default=right.data)
+        else:
+            raise TypeError("left: {0}, right: {1}".format(
+                left.__class__.__name__, right.__class__.__name__
+            ))
 
 
     @classmethod
-    def join(cls, element):
+    def join(cls, element, reducer=take_left):
+        """There are more than one possible type of join.
+        This one is implicitly the 'first' behavior.
+
+        @todo: rewrite join as a reduction
+        """
         if isinstance(element.data, Maybe):
             return 
 
@@ -175,9 +196,13 @@ class MaybeElement(category.Element, Maybe):
     """Exists only be base class for Just and Nothing."""
 
 class Just(MaybeElement):
-    def __init__(self, element=None):
+    """
+    'default' forms the implicit 'or else...' inside Maybe's structure
+    It is used for chaining
+    """
+    def __init__(self, element=None, default=None):
         self.data = element
-
+        self.default = default
 
 class Nothing(Just):
     # def __init__(self):
