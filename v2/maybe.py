@@ -1,7 +1,8 @@
 """
 Next-steps:
 * Change Nothing to be Just with .data = (), since this hooks the behavior of zero/append/just to the behavior of tuples
-@todo: rewrite join as a reduction. Write 'first'/'last' as arguments into join, taking advantage of chain on .default
+* Change inheritance, Nothing inherits from MaybeElement, but not Just
+* rewrite join as a reduction. Write 'first'/'last' as arguments into join, taking advantage of chain on .default
 * Change category.append : element, element
 * Change list.append
 * simplify conditional logic in Maybe.__new__. Preferablly by dispatching.
@@ -10,6 +11,8 @@ Next-steps:
 
 Later-steps:
 * Change default to use _NotPassed
+* Incorporate support functions and methods from https://hackage.haskell.org/package/base-4.8.1.0/docs/Data-Maybe.html#t:Maybe, such fromMaybe, fromJust
+* Consider the handling of 'default'. In f_apply/a_apply, when element is Nothing, which should be returned: element.default or morphism.default.
 
 PROBLEM:
 This doesn't really let me write the chain of tries, where you take the first valid one.
@@ -117,24 +120,6 @@ class Maybe(category.Monad):
         return self
 
         """
-        # 
-        # Original, QUASI WORKING form
-        # 
-        # if issubclass(cls, category.Element) or issubclass(cls, category.Morphism):
-        #     self = object.__new__(cls)
-        # else:
-        #     # Calls to constructor of Maybe itself should dispatch
-        #     if len(elements) == 0:
-        #         self = object.__new__(Nothing)
-        #     else:   # Morphism or Element?
-        #         if all(isinstance(elm, typing.Callable) for elm in elements):
-        #             self = object.__new__(cls.Morphism)
-        #         else:
-        #             # self = object.__new__(cls.Element)                
-        #             self = object.__new__(Just)
-        # self.__init__(*elements)
-        # return self
-        
         # This was called via Just, Nothing, or MaybeMorphism, so
         #    Defer to the __new__ for that....
         if issubclass(cls, category.Element) or issubclass(cls, category.Morphism):
