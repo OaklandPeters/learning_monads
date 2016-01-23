@@ -10,7 +10,7 @@ class ListCategory(category.Category):
     def f_apply(cls, element, function):
         accumulator = element.zero()
         for elm in element.data:
-            accumulator = accumulator.append(function(elm))
+            accumulator = accumulator.append(ListElement(function(elm)))
         # I don't recall if f_apply/f_map should trigger flattening/join
         # return cls.join(cls, accumulator)
         return accumulator
@@ -45,7 +45,7 @@ class ListCategory(category.Category):
         arguments from the domain category, into the monad's category.
         constructor::(a -> m b)
         """
-        return element.f_apply(constructor).join()
+        return element.f_apply(constructor).join()            
 
     @classmethod
     def m_map(cls, constructor):
@@ -60,9 +60,9 @@ class ListCategory(category.Category):
         return ListElement()
 
     @classmethod
-    def append(cls, element, value):
+    def append(cls, element: 'ListElement', other: 'ListElement'):
         accumulator = element.zero()
-        accumulator.data = element.data + (value, )
+        accumulator.data = element.data + other.data
         return accumulator
 
     @classmethod
@@ -71,11 +71,14 @@ class ListCategory(category.Category):
         accumulator = element.zero()
         for elm in element.data:
             if isinstance(elm, List):
-                for inner_elm in elm.data:
-                    accumulator = accumulator.append(inner_elm)
-            else:
                 accumulator = accumulator.append(elm)
+            else:
+                accumulator = accumulator.append(cls.lift(elm))
         return accumulator
+
+    @classmethod
+    def lift(cls, value):
+        return List(value)
 
 
 class List(category.Monad):
@@ -161,6 +164,32 @@ class TestList(unittest.TestCase):
         one = ListElement(3, 4, 5)
         two = ListElement(*[elm+2 for elm in (1, 2, 3)])
         self.assertEqual(one, two)
+
+    def test_nested_eq(self):
+        one = ListElement(ListElement(5))
+        two = ListElement(ListElement(5))
+        self.assertEqual(one, two)
+        three = ListElement(ListElement())
+        self.assertNotEqual(one, three)
+
+
+    def test_append(self):
+        accumulator = List.zero()
+        self.assertEqual(accumulator, List())
+        accumulator = accumulator.append(List(1))
+        self.assertEqual(accumulator, List(1))
+        accumulator = accumulator.append(List(2))
+        self.assertEqual(accumulator, List(1, 2))
+        self.assertRaises((TypeError, AttributeError), lambda: accumulator.append(5))
+
+    def test_join(self):
+        self.assertEqual(List().join(), List())
+        self.assertEqual(List('a').join(), List('a'))
+        self.assertEqual(List('ab', 12).join(), List('ab', 12))
+        self.assertEqual(List(List()).join(), List())
+        self.assertEqual(List(List('x')).join(), List('x'))
+        self.assertEqual(List(List('x'), List('y')).join(), List('x', 'y'))
+        self.assertEqual(List(List(List(1))).join(), List(List(1)))
 
     def test_f_apply(self):
         nums = (1, 2, 3)

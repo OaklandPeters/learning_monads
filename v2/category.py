@@ -32,6 +32,11 @@ class Category(type):
     """
     Acts as both a metaclass, and as the authoritative location of all
     monadic methods for a monad-category.
+    
+    @todo: Make this an abstract
+    @todo: Add *all* of the methods on this
+    ... not everything on this should be abstract, if we want you to be able
+    to write categories without hte full monadic structure
     """
 
 
@@ -64,9 +69,9 @@ class Monoid(CategoryBase):
     def zero(cls):
         return cls.Category.zero()
 
-    def append(self, value):
+    def append(self, element):
         # return self.Category.append(value)
-        return self.Category.append(self, value)
+        return self.Category.append(self, element)
 
     def join(self):
         return self.Category.join(self)
