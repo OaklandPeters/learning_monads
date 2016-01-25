@@ -108,7 +108,7 @@ class Element(Monoid):
         return self.Category.m_apply(self, constructor)
 
 
-class Morphism(CategoryBase):
+class Morphism(Monoid):
     """
     This is used to seperate Elements from Morphisms in a given class,
     since the signatures of their methods should differ.
@@ -119,7 +119,7 @@ class Morphism(CategoryBase):
     f_map and a_map are not meaningfully defined for this, because f_map/m_map
     expect to take a bare (non-wrapped) *single* function.
 
-    @todo: Move *everything* off of ListMorphism, and into this.
+    This has monoidal structure via Identity, Compose, and Collapse. Zero/Append/Join are just proxies to these functions.
     """
     def a_map(self):
         return self.Category.a_map(self)
@@ -127,10 +127,32 @@ class Morphism(CategoryBase):
     def __call__(self, *args):
         return self.a_map()(self.Element(*args))
 
-    def compose(self):
+    @classmethod
+    def identity(self):
+        return self.Category.identity()
+
+    def compose(self, other: 'Morphism'):
         """
         This function is not normally *explicitly* associated with 
         """
+        return self.Category.compose(self, other)
+
+    def collpase(self):
+        """
+        Plays the role of collapsing the AST like structure of composed functions.
+        """
+        return self.Category.collapse(self)
+
+    @classmethod
+    def zero(cls):
+        """Monoidal structure on morphisms (functions)."""
+        return cls.identity()
+
+    def append(self, other: 'Morphism'):
+        return self.compose(other)
+
+    def join(self):
+        return self.collapse()
 
 
 class Monad(Monoid):
