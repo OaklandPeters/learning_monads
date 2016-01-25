@@ -78,7 +78,7 @@ class Monoid(CategoryBase):
 
 
 
-class Element(CategoryBase):
+class Element(Monoid):
     """
     The 'object's within a category. Called Element (rather than 'object') to
     prevent colliding with Python's builtin 'object'.
