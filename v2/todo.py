@@ -16,6 +16,7 @@ Later steps:
 
 Much-later steps:
 * Add sugar-classes to category.py, for '>>' at least.
+* Unit-test mixin for monoid, based on the laws here: https://hackage.haskell.org/package/base-4.8.2.0/docs/Data-Monoid.html
 * Incorporate Foldable and Traversable into the Pythonic hierarchy
 * Try to Rework to try to simplify the hierarchy, to merge ListCategory and List
 * Try to work in material to translate Transverable to Python (this might be fairly complicated)

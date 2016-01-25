@@ -333,7 +333,8 @@ class TestList(unittest.TestCase):
         list_o = List('aaa', 'bbb')
         list_f = List(sorted)
         self.assertIsInstance(list_o, ListElement)
-        self.assertIsInstance(list_f, ListMorphism)        
+        self.assertIsInstance(list_f, ListMorphism)
+        
 
 if __name__ == "__main__":
     unittest.main()

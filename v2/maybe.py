@@ -1,19 +1,23 @@
 """
 First-steps:
 * Tests for a_apply; test_a_apply_empty
-* test_join
 * a_apply/a_map
 * m_apply/m_map
 * Tests for a_map
 * Tests for m_apply
 * Tests for m_map
 * Tests for append, join for 
+* for a_apply/a_map, need a way to chain/prioritize checking .default between element and morphism
 * Signature for Maybe.__init__(self, value=(,), default=_NotPassed). Get MaybeElement/MaybeMorphism to defer to it.
 * MaybeCategory.first, .last. Recursive join() operations.
 * test_join_first(), test_join_last()
 * Maybe         -->   (MaybeElement, MaybeMorphism)
 * Maybe  -|sugar|->   (Just, Nothing)
+* PROBLEM: for Maybe, 'm_apply' is sensible, but f_apply and a_apply are not.
 
+CRUX OF FIRST/LAST:
+whether to apply the function in f_apply when element is Nothing()
+... maybe, apply the function to both element.data and element.default, and first/last determines which of left or right to take
 
 
 Next-steps:
@@ -55,22 +59,68 @@ import typing
 import category
 from category import classproperty
 
+
 class _NotPassed: pass
 
 class MaybeCategory:
+    """
+    Intuition: some function(s) here need to map the function over (element.data, element.default), and have a decision function on which to take.
+        pymonad.Maybe's Last/First do it via .append
+    First/Last are Monoids which wrap around Maybe values, but are NOT Maybes
+    First.append(element, other):
+        if isinstance(element.data, Nothing): return other
+        else: return element
+    Last.append(element, other):
+        if isinstance(element.data, Nothing): return element
+        else: return other
+
+
+    HANDLING DEFAULTS . . .
+    ---------
+    double = lambda obj: obj+obj
+    Just('x', 'y').f_apply(double) # Just('xx', 'yy')
+
+    def double_just(obj):
+        return Just(obj + obj)
+    Just('x', 'y').m_apply(double_just)  # Just(Just('xx'), Just('yy'))
+    """
+
+
     @classmethod
-    def f_apply(cls, element, function, default=_NotPassed):
+    def f_apply(cls, element, function):
         """
         If element is Nothing, returns the default value, else
         applies the function to contents of element, and
         returns wrapped in a 'Just'
-        """
-        if default == _NotPassed:
-            default = cls.zero()
+
+        Note: This is making the assumption to treat 'None' like Nothing()
+         
+        @todo: decide how this should treat elements with a default specified.
         if isinstance(element, Nothing):
-            return default
+            # I .. think I'd like this to recurse down the default (hence, recursively claling f_apply), BUT... that requires dispatching on the type of .default
+            
+            if isinstance(element, Nothing):
+                if isinstance(element.default, Maybe):
+                    return element.default.f_apply(function)
+                else:
+                    # @todo: Quandry - what if element.default==Nothing ??
+                    return Just(element.default)
+            # isinstance(element, Just)
+            else:
+                return Just(element.data)
+
+        """
+        if isinstance(element, Nullish):
+            return element.default
         else:
             return Just(function(element.data))
+
+    @classmethod
+    def _apply(cls, value: typing.Union[Any, 'Element'], function):
+        if isinstance(value, Nothing):
+            return Nothing
+        else:
+            return function(value)
 
     @classmethod
     def f_map(cls, function, default=None):
@@ -80,15 +130,16 @@ class MaybeCategory:
 
     @classmethod
     def a_apply(cls, element, morphism: 'MaybeMorphism'):
-
-        # unwrap the morphism somehow
+        """
+        
+        what should be Just('x').a_apply(Nothing()) ?
+        By analogy with List(), it would be == Nothing()
+        """
+        accumulator = element.zero()
         if isinstance(morphism, Nothing):
-            pass
-
-
-        # what should be Just('x').a_apply(Nothing()) ?
-        # By analogy with List(), it would be 
-
+            accumulator.append(Nothing())
+        else:
+            accumulator.append(element.f_apply(morphism.data))
         return accumulator.join()
 
     @classmethod
@@ -96,6 +147,12 @@ class MaybeCategory:
         def wrapper(element: 'MaybeElement'):
             return cls.a_apply(element, morphism)
         return wrapper
+
+
+    @classmethod
+    def m_apply(cls, element: 'MaybeElement',
+                constructor: typing.Callable[[typing.Any], 'MaybeElement']) -> 'MaybeElement':
+        return element.f_apply(constructor).join()
 
     @classmethod
     def zero(cls):
@@ -191,8 +248,10 @@ class Maybe(category.Monad):
             self.__init__(value, default=default)
             return self
 
-    # def __init__(self, *element):
-    #     self.data = element
+    def __init__(self, value=_NotPassed, default=_NotPassed):
+        """Shared by Element/Morphism and Just/Nothing."""
+        self.data = value
+        self.default = default
 
     @classproperty
     def Category(cls):
@@ -236,6 +295,10 @@ class MaybeElement(category.Element, Maybe):
     """Exists only be base class for Just and Nothing."""
 
 
+class MaybeMorphism(category.Morphism, Maybe):
+    """@todo: Should also have Just/Nothing versions."""
+
+
 class Just(MaybeElement):
     """
     'default' forms the implicit 'or else...' inside Maybe's structure
@@ -244,8 +307,7 @@ class Just(MaybeElement):
     def __init__(self, value=_NotPassed, default=_NotPassed):
         if value is _NotPassed:
             raise TypeError("No value provided to Just( )")
-        self.data = value
-        self.default = default
+        super(Just, self).__init__(value, default)
 
 
 class Nothing(MaybeElement):
@@ -254,19 +316,14 @@ class Nothing(MaybeElement):
             raise TypeError("Nothing() should not have a value provided.")
         # ? assert default is _NotPassed
         # ... for now I'll let a default be specified for Nothing
-        self.data = value
-        self.default = default
+        super(Nothing, self).__init__(value, default)
+            
 
 
 Null = Nothing()
 
-class MaybeMorphism(category.Morphism, Maybe):
+Nullish = (type(None), Nothing)
 
-    def __init__(self, element):
-        self.data = element
-
-
-thing = Maybe('aa')
 
 
 #-----------
@@ -274,12 +331,21 @@ thing = Maybe('aa')
 #-----------
 import unittest
 
-def get(index, default=Null):
+def get(index, default=None):
     def wrapper(record):
         try:
             return record[index]
         except (IndexError, KeyError, TypeError):
             return default
+    return wrapper
+
+def getter_bind(index):
+    def wrapper(record):
+        try:
+            value = record[index]
+        except (IndexError, KeyError, TypeError):
+            return Nothing()
+        return Just(value)
     return wrapper
 
 img_tag1 = {
@@ -399,7 +465,7 @@ class MaybeTests(unittest.TestCase):
     def test_constructor_element_default(self):
         """Only meaningful in concjunction to f_apply/f_map"""
 
-    def test_chaining(self):
+    def test_f_apply_chaining(self):
         self.assertEqual(
             Maybe(img_tag1).f_apply(get('data-src')).f_apply(get('src')),
             Just(Nothing())
@@ -409,6 +475,27 @@ class MaybeTests(unittest.TestCase):
             Just(Nothing())
         )
     
+    def test_a_apply_chaining(self):
+        just_elm = Maybe(img_tag1)
+        just_morph1 = Maybe(get('data-src'))
+        just_morph2 = Maybe(get('src'))
+        res1 = Maybe(img_tag1).a_apply(Maybe(get('data-src')))
+        res2 = res1.a_apply(Maybe(get('src')))
+
+
+        print()
+        print("res1:", type(res1), res1)
+        print("res2:", type(res2), res2)
+        print()
+        import ipdb
+        ipdb.set_trace()
+        print()
+        
+
+        self.assertEqual(
+            Maybe(img_tag1).a_apply(Maybe(get('data-src'))).a_apply(Maybe(get('src')))
+        )
+
     def test_join(self):
         self.assertEqual(Just('xx').join(), Just('xx'))
         self.assertEqual(Maybe().join(), Nothing())
@@ -435,7 +522,10 @@ class MaybeTests(unittest.TestCase):
     #     just_morph = Just(lambda _str: _str+_str)
     #     nothing_morph = Just()
 
-
+    def test_m_apply(self):
+        just_elm = Maybe(img_tag1)
+        constructor1 = getter_bind('src')
+        constructor2 = getter_bind('data-src')
 
 
 
