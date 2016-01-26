@@ -27,7 +27,7 @@ NO:
 
 EVEN SIMPLER
 --------------
-Remove JustElement/NothingElement/JustMorphism/NothingMorphism --> MaybeElement/MaybeMorphism. Just/Nothing are not instancable classes, and just exist as constructors and type-checking.
+BUGFIX: What about if Just(tuple())
 
 
 First-steps:
@@ -48,6 +48,8 @@ Later-steps:
 
 Much-later steps:
 * Form plan for more advanced 'TryIt' class - which must maintain context (and validate for it)
+* Make an Adapator or new monad, for either Maybe or TryIt - which catches exceptions, and recasts to Nothing
+* IDEA: Catcher monad, which is a monad on functions. Catcher(IndexError).f_apply(get('src'))
 """
 import typing
 
@@ -263,21 +265,18 @@ class Nothing(Maybe):
 #-----------
 import unittest
 
-def get(index, default=None):
+
+def get(index):
     def wrapper(record):
-        try:
-            return record[index]
-        except (IndexError, KeyError, TypeError):
-            return default
+        return record[index]
     return wrapper
 
-def getter_bind(index):
+def maybe_get(index):
     def wrapper(record):
-        try:
-            value = record[index]
-        except (IndexError, KeyError, TypeError):
+        if index in record:
+            return Just(record[index])
+        else:
             return Nothing()
-        return Just(value)
     return wrapper
 
 img_tag1 = {
@@ -379,6 +378,7 @@ class MaybeTests(unittest.TestCase):
         self.assertEqual(Maybe(), MaybeElement())
         self.assertEqual(Nothing(), MaybeElement())
 
+    def test_non_ambiguated(self):
         self.assertNotEqual(Just(None), Nothing())
         self.assertNotEqual(Just(tuple()), Nothing())
 
@@ -412,83 +412,66 @@ class MaybeTests(unittest.TestCase):
         self.assertEqual(Just('xy').append(Nothing()), Just('xy'))
         self.assertEqual(Just(1).append(Just(2)), Just(1))
 
-    #def test_getter(self):
-    #    """Tests the support function 'get', not really Maybe itself."""
-    #    self.assertEqual(get('src')(img_tag1), img_tag1['src'])
-
     def test_f_apply(self):
-        maybe_j = Maybe(img_tag1)
-
-        result1 = maybe_j.f_apply(get('src'))
         self.assertEqual(
-            result1,
-            Just(get('src')(img_tag1))
+            Maybe(img_tag1).f_apply(get('src')),
+            Just(img_tag1['src'])
         )
 
-    #def test_constructor_element_default(self):
-    #    """Only meaningful in concjunction to f_apply/f_map"""
+    def test_f_apply_chaining(self):
+        self.assertEqual(
+            Nothing().f_apply(get('data-src')),
+            Nothing()
+        )
+        self.assertEqual(
+            Maybe(img_tag1).f_apply(get('src')),
+            Just('path: src')
+        )
 
-    #def test_f_apply_chaining(self):
-    #    self.assertEqual(
-    #        Maybe(img_tag1).f_apply(get('data-src')).f_apply(get('src')),
-    #        Just(Nothing())
-    #    )
-    #    self.assertEqual(
-    #        Maybe(img_tag1).f_apply(get('src')).f_apply(get('data-src')),
-    #        Just(Nothing())
-    #    )
-    
-    #def test_a_apply_chaining(self):
-    #    just_elm = Maybe(img_tag1)
-    #    just_morph1 = Maybe(get('data-src'))
-    #    just_morph2 = Maybe(get('src'))
-    #    res1 = Maybe(img_tag1).a_apply(Maybe(get('data-src')))
-    #    res2 = res1.a_apply(Maybe(get('src')))
+    def test_a_apply(self):
+        self.assertEqual(
+            Maybe(img_tag1).a_apply(Just(get('src'))),
+            Just('path: src')
+        )
+        self.assertEqual(
+            Nothing().a_apply(Just(get('src'))),
+            Nothing()
+        )
+        self.assertEqual(
+            Maybe(img_tag1).a_apply(MaybeMorphism()),
+            Nothing()
+        )
+        self.assertEqual(
+            Nothing().a_apply(MaybeMorphism()),
+            Nothing()
+        )
 
+    def test_m_apply(self):
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('src')),
+            Just('path: src')
+        )
+        self.assertEqual(
+            Nothing().m_apply(maybe_get('src')),
+            Nothing()
+        )
 
-    #    print()
-    #    print("res1:", type(res1), res1)
-    #    print("res2:", type(res2), res2)
-    #    print()
-    #    import ipdb
-    #    ipdb.set_trace()
-    #    print()
-        
-
-    #    self.assertEqual(
-    #        Maybe(img_tag1).a_apply(Maybe(get('data-src'))).a_apply(Maybe(get('src')))
-    #    )
+    def test_m_apply_chaining(self):
+        repeat = lambda x: x+x
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('src')).m_apply(repeat),
+            Just('path: srcpath: src')
+        )
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('data-src')).m_apply(repeat),
+            Nothing()
+        )
 
     def test_join(self):
         self.assertEqual(Just('xx').join(), Just('xx'))
         self.assertEqual(Maybe().join(), Nothing())
         self.assertEqual(Just(Just('xx')).join(), Just('xx'))
         self.assertEqual(Just(Nothing()).join(), Nothing())
-        
-    #    # Handling of default
-    #    self.assertEqual(
-    #        Just(Just('a', default='b')).join(),
-    #        Just('a', default='b')
-    #    )
-
-    #    # Edge case that I don't know what it should be
-    #    self.assertEqual(Just(Nothing(), default=12).join(), Just(12))
-    #    self.assertEqual(Just(Nothing(), default=Just('xx')).join(), Just('xx'))
-
-
-    ## def test_a_apply(self):
-    ##     result = Maybe(img_tag).a_apply(get('src')).a_apply('data_src')
-
-    ## def test_a_apply_empty(self):
-    ##     just_elm = Just('xx')
-    ##     nothing_elm = Just()
-    ##     just_morph = Just(lambda _str: _str+_str)
-    ##     nothing_morph = Just()
-
-    #def test_m_apply(self):
-    #    just_elm = Maybe(img_tag1)
-    #    constructor1 = getter_bind('src')
-    #    constructor2 = getter_bind('data-src')
 
 
 if __name__ == "__main__":
