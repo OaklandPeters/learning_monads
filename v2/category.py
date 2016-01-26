@@ -39,6 +39,18 @@ class Category(type):
     to write categories without hte full monadic structure
     """
 
+    def __instancecheck__(cls, instance):
+        if any('__instancecheck__' in klass.__dict__ for klass in cls.__mro__):
+            return cls.__instancecheck__(instance)
+        else:
+            return type.__instancecheck__(cls, instance)
+
+    def __subclasscheck__(cls, subclass):
+        if any('__subclasscheck__' in klass.__dict__ for klass in cls.__mro__):
+            return cls.__subclasscheck__(subclass)
+        else:
+            return type.__subclasscheck__(cls, subclass)
+
 
 class CategoryBase:
     """
