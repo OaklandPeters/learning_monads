@@ -145,14 +145,19 @@ class Morphism(Monoid):
 
     @classmethod
     def zero(cls):
-        """Monoidal structure on morphisms (functions)."""
+        """Monoidal structure on morphisms (functions).
+        Proxies to category.identity"""
         return cls.identity()
 
     def append(self, other: 'Morphism'):
-        return self.compose(other)
+        """Monoidal structure on morphisms (functions).
+        Proxies to category.compose"""
+        return self.Category.compose(self, other)
 
     def join(self):
-        return self.collapse()
+        """Monoidal structure on morphisms (functions).
+        Proxies to category.collapse"""
+        return self.Category.collapse(self)
 
 
 class Monad(Monoid):

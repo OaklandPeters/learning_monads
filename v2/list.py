@@ -80,6 +80,26 @@ class ListCategory(category.Category):
     def lift(cls, value):
         return List(value)
 
+    @classmethod
+    def identity(cls):
+        return ListMorphism()
+
+    @classmethod
+    def compose(cls, morphism: 'ListMorphism', other: 'ListMorphism'):
+        accumulator = ListMorphism.identity()
+        accumulator.data = morphism.data + other.data
+        return accumulator
+
+    @classmethod
+    def collapse(cls, morphism):
+        accumulator = morphism.zero()
+        for func in morphism.data:
+            if isinstance(func, List):
+                accumulator = accumulator.append(func)
+            else:
+                accumulator = accumulator.append(ListMorphism(elm))
+        return accumulator
+
 
 class List(category.Monad):
     """
@@ -98,7 +118,9 @@ class List(category.Monad):
             self = object.__new__(cls)
         else:
             # Calls to constructor of List itself should dispatch
-            if all(isinstance(elm, typing.Callable) for elm in elements):
+            if len(elements) == 0:
+                self = object.__new__(cls.Element)
+            elif all(isinstance(elm, typing.Callable) for elm in elements):
                 self = object.__new__(cls.Morphism)
             else:
                 self = object.__new__(cls.Element)
@@ -148,7 +170,12 @@ class ListMorphism(category.Morphism, List):
     """
     A more structured version of this might be referenced simply List.Element
     """
-
+    def __call__(self, *args):
+        # If List identity function
+        if len(self.data) == 0:
+            return args
+        else:
+            return super(ListMorphism, self).__call__(*args)
 
 #=============
 # Unit-tests

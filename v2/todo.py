@@ -1,9 +1,11 @@
 """
 Next-steps:
+* IMPORTANT REWORK: Morphism IS a Monoid, but defined in terms of different functions on the category: zero --> identity, append --> compose, join --> collapse
 * Rework so that functions that can be defined in terms of one another ARE -- inside category.Element, and category.Morphism (such as bind in terms of fmap and join). Particularly, f_map, a_map, and m_map can be defined on category.Morphism.
 * new class: 'WellBehavedMonad', which provides implementation of a number of conveniences, including the dispatching __new__, __repr__ based on .data, .iter, 
 * IMPORTANT: decide what/how to do with 'compose' for morphisms. Possible: zero==identity, append==compose, join==collapse
 * Add '@functools.wraps()' statements to 'map' functions in list.py and maybe.py. Consider changing the naming process.
+* Simplify List.compose - to account for removing the identity function when appending ot it
 
 
 Later steps:
