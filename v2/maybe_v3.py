@@ -24,6 +24,12 @@ NO:
 
 
 
+
+EVEN SIMPLER
+--------------
+Remove JustElement/NothingElement/JustMorphism/NothingMorphism --> MaybeElement/MaybeMorphism. Just/Nothing are not instancable classes, and just exist as constructors and type-checking.
+
+
 First-steps:
 * Update old unit-tests for the updated version(s)
 * Constructor for Maybe dispatches to MaybeElement and MaybeMorphism
@@ -52,24 +58,37 @@ from category import classproperty
 class MaybeCategory(category.Category):
     @classmethod
     def f_apply(cls, element, function):
-        if isinstance(element, Nothing):
-            return Nothing()
-        else:
-            return Just(function(element.data))
+        accumulator = element.zero()
+        # If isinstnace(element, Nothing), this will do nothing
+        for value in element:
+            accumulator = accumulator.append(Just(function(value)))
+        return accumulator
+        #if isinstance(element, Nothing):
+        #    return Nothing()
+        #else:
+        #    return Just(function(element.data))
 
     @classmethod
     def a_apply(cls, element, morphism):
-        if isinstance(morphism, Just):
-            return element.f_apply(morphism.data)
-        else:  # Nothing morphism
-            return Nothing()
+        accumulator = element.zero()
+        # If isinstance(morphism, Nothing), then this will do nothing
+        for func in morphism:
+            accumulator = accumulator.append(element.f_apply(func))
+        return accumulator.join()
+        #
+        #if isinstance(morphism, Nothing):
+        #    return Nothing()
+        #else:
+        #    return element.f_apply(morphism.data)
 
     @classmethod
     def m_apply(cls, element, constructor):
-        if isinstance(element, Nothing):
-            return Nothing()
-        else:
-            return constructor(element.data)
+        return element.f_apply(constructor).join()
+        #if isinstance(element, Nothing):
+        #    return Nothing()
+        #else:
+        #    return constructor(element.data)
+        
 
     @classmethod
     def zero(cls):
@@ -77,16 +96,26 @@ class MaybeCategory(category.Category):
 
     @classmethod
     def append(cls, element, other):
+        """
+         Alternate v2:
+         return Maybe(*element.reducer(element, other))
+         def first(self, other):
+             return self
+         def last(self, other):
+             return other
+        """
         if isinstance(element, Nothing):
-            return Maybe(*other.data)
+            #return Maybe(*other.data)
+            return element.lift(*other.data)
         elif isinstance(other, Nothing):
-            return Maybe(*element.data)
+            #return Maybe(*element.data)
+            return element.lift(*element.data)
         # both are 'Just'
         # This is built to implicity use 'First' - take the left
         # This could be generalized by specifying a 'reducer' function parameter
         # return Maybe(element.reducer(element, other))
         else:
-            return Maybe(*element.data)  # take the 'left'/'first'
+            return element.lift(*element.data)  # take the 'left'/'first'
 
     @classmethod
     def join(cls, element: 'MaybeElement'):
@@ -110,9 +139,10 @@ class MaybeCategory(category.Category):
 
     @classmethod
     def compose(cls, morphism: 'MaybeMorphism', other: 'MaybeMorphism'):
-        def wrapper(*elements):
-            return other(*morphism(*elements))
-        return MaybeMorphism(wrapper)
+        #def wrapper(*elements):
+        #    return other(*morphism(*elements))
+        #return MaybeMorphism(wrapper)
+        return cls.append(morphism, other)
 
     @classmethod
     def collapse(cls, morphism):
@@ -125,7 +155,7 @@ class MaybeCategory(category.Category):
         return accumulator
 
 
-class Maybe(category.Monad):
+class Maybe(category.Monad, metaclass=MaybeCategory):
     def __new__(cls, *data):
         """
         Delegates to Morphism/Element classes where possible,
@@ -174,29 +204,36 @@ class Maybe(category.Monad):
     def __iter__(self):
         yield from self.data
 
+    @classmethod
+    def _validation(cls, *data):
+        if len(data) > 1:
+            raise TypeError("Maybe objects must receive 0 or 1 arguments, not "+len(data))
 
 class MaybeElement(category.Element, Maybe):
     """
-    Used for type-checking, but not meant to be directly instantiated.
 
-    Delegates to JustElement/NothingElement
     """
     def __new__(cls, *data):
-        if len(data) == 0:
-            return NothingElement.__new__(cls, *data)
-        else:
-            return JustElement.__new__(cls, *data)
+        category.check_validation(cls, *data)
+        return object.__new__(MaybeElement)
+        #if len(data) == 0:
+        #    return NothingElement.__new__(cls, *data)
+        #else:
+        #    return JustElement.__new__(cls, *data)
 
 
 class MaybeMorphism(category.Morphism, Maybe):
     """
-    Delegates to JustElement/NothingElement
+    #Delegates to JustElement/NothingElement
     """
     def __new__(cls, *data):
-        if len(data) == 0:
-            return NothingMorphism.__new__(cls, *data)
-        else:
-            return JustMorphism.__new__(cls, *data)
+        category.check_validation(cls, *data)
+        return object.__new__(MaybeMorphism)
+
+        #if len(data) == 0:
+        #    return NothingMorphism.__new__(cls, *data)
+        #else:
+        #    return JustMorphism.__new__(cls, *data)
 
     #def __init__(self, *data):
     #    if not all(isinstance(value, typing.Callable) for value in data):
@@ -204,56 +241,101 @@ class MaybeMorphism(category.Morphism, Maybe):
     #    super(MaybeMorphism, self).__init__(*data)
 
 
+#class Just(Maybe):
+#    def __new__(cls, *data):
+#        # Raise error, if not exactly one argument
+#        Just._validation(*data)
+#        if all(isinstance(elm, typing.Callable) for elm in data):
+#            return JustMorphism.__new__(cls, *data)
+#        else:
+#            return JustElement.__new__(cls, *data)
+
+#    @classmethod
+#    def _validation(cls, *data):
+#        if len(data) != 1:
+#            raise TypeError("Just() must receive exactly one argument")
+
+
+#class Nothing(Maybe):
+#    def __new__(cls, *data):
+#        Nothing._validation(*data)
+#        return NothingElement.__new__(cls, *data)
+
+#    @classmethod
+#    def _validation(cls, *data):
+#        if len(data) != 0:
+#            raise TypeError("Nothing() does not accept arguments.")
+
+
+#class JustMorphism(MaybeMorphism, Just):
+#    def __new__(cls, *data):
+#        """
+#        Defines it's own __new__, so it overrides it's parent's
+#        __new__ (the parent's can delegate - this one should not).
+#        """
+#        return object.__new__(JustMorphism)
+
+
+#class NothingMorphism(MaybeMorphism, Nothing):
+#    def __new__(cls, *data):
+#        return object.__new__(NothingMorphism)
+
+#    def __call__(cls, *data):
+#        return data
+
+#class JustElement(MaybeElement, Just):
+#    def __new__(cls, *data):
+#        return object.__new__(JustElement)
+
+
+#class NothingElement(MaybeElement, Nothing):
+#    def __new__(cls, *data):
+#        return object.__new__(NothingElement)
+
+
+
+
+
+#
+#   Testing Just/Nothing as convenience functions
+#
+#
 class Just(Maybe):
     def __new__(cls, *data):
-        # Raise error, if not exactly one argument
-        Just._validation(*data)
+        cls._validation(*data)
         if all(isinstance(elm, typing.Callable) for elm in data):
-            return JustMorphism.__new__(cls, *data)
+            return MaybeMorphism(*data)
         else:
-            return JustElement.__new__(cls, *data)
+            return MaybeElement(*data)
 
     @classmethod
     def _validation(cls, *data):
         if len(data) != 1:
             raise TypeError("Just() must receive exactly one argument")
 
+    @classmethod
+    def __instancecheck__(cls, instance):
+        if isinstance(instance, Maybe):
+            if len(instance.data) == 1:
+                return True
+        return False
 
 class Nothing(Maybe):
     def __new__(cls, *data):
-        Nothing._validation(*data)
-        return NothingElement.__new__(cls, *data)
+        cls._validation(*data)
+        return MaybeElement(*data)
 
     @classmethod
     def _validation(cls, *data):
         if len(data) != 0:
             raise TypeError("Nothing() does not accept arguments.")
 
-
-class JustMorphism(MaybeMorphism, Just):
-    def __new__(cls, *data):
-        """
-        Defines it's own __new__, so it overrides it's parent's
-        __new__ (the parent's can delegate - this one should not).
-        """
-        return object.__new__(JustMorphism)
-
-
-class NothingMorphism(MaybeMorphism, Nothing):
-    def __new__(cls, *data):
-        return object.__new__(NothingMorphism)
-
-    def __call__(cls, *data):
-        return data
-
-class JustElement(MaybeElement, Just):
-    def __new__(cls, *data):
-        return object.__new__(JustElement)
-
-
-class NothingElement(MaybeElement, Nothing):
-    def __new__(cls, *data):
-        return object.__new__(NothingElement)
+    @classmethod
+    def __instancecheck__(cls, instance):
+        if isinstance(instance, Maybe):
+            if len(instance.data) == 0:
+                return True
+        return False
 
 
 
@@ -351,69 +433,49 @@ class MaybeTests(unittest.TestCase):
         is_je(MaybeElement('xx'))
         is_je(MaybeElement(sorted))
 
-        self.assertRaises(TypeError, lambda: JustElement())
-        is_je(JustElement('xx'))
-        is_je(JustElement(sorted))
+        #self.assertRaises(TypeError, lambda: JustElement())
+        #is_je(JustElement('xx'))
+        #is_je(JustElement(sorted))
 
-        is_ne(NothingElement())
-        self.assertRaises(TypeError, lambda: NothingElement('xx'))
-        self.assertRaises(TypeError, lambda: NothingElement(sorted))
+        #is_ne(NothingElement())
+        #self.assertRaises(TypeError, lambda: NothingElement('xx'))
+        #self.assertRaises(TypeError, lambda: NothingElement(sorted))
 
         is_nm(MaybeMorphism())
         self.assertRaises(TypeError, lambda: MaybeMorphism('xx'))
         is_jm(MaybeMorphism(sorted))
 
-        self.assertRaises(TypeError, lambda: JustMorphism())
-        self.assertRaises(TypeError, lambda: JustMorphism('xx'))
-        is_jm(JustMorphism(sorted))
+        #self.assertRaises(TypeError, lambda: JustMorphism())
+        #self.assertRaises(TypeError, lambda: JustMorphism('xx'))
+        #is_jm(JustMorphism(sorted))
 
-        is_nm(NothingMorphism())
-        self.assertRaises(TypeError, lambda: NothingMorphism('xx'))
-        self.assertRaises(TypeError, lambda: NothingMorphism(sorted))
+        #is_nm(NothingMorphism())
+        #self.assertRaises(TypeError, lambda: NothingMorphism('xx'))
+        #self.assertRaises(TypeError, lambda: NothingMorphism(sorted))
 
         # todo: tests for more than one argument input
 
-    def test_subclass_structure(self):
-        """ ? Which ones should be subclass of Monad ?"""
-        self.assert_is_subclasses(
-            JustElement,
-            _is=(Maybe, Just, category.Element, category.Monoid),
-            _not=(Nothing, category.Morphism)
-        )
-        self.assert_is_subclasses(
-            NothingElement,
-            _is=(Maybe, Nothing, category.Element, category.Monoid),
-            _not=(Just, category.Morphism)
-        )
-        self.assert_is_subclasses(
-            JustMorphism,
-            _is=(Maybe, Just, category.Morphism, category.Monoid),
-            _not=(Nothing, category.Element)
-        )
-        self.assert_is_subclasses(
-            NothingMorphism,
-            _is=(Maybe, Nothing, category.Morphism, category.Monoid),
-            _not=(Just, category.Element)
-        )
+        self.assertRaises(TypeError, lambda: Maybe(1, 2))
+        self.assertRaises(TypeError, lambda: Just(1, 2))
+        #self.assertRaises(TypeError, lambda: JustMorphism(1, 2))
 
     def test_constructor_equality(self):
         self.assertEqual(Maybe('xx'), Just('xx'))
         
         func = lambda x: x+2
         self.assertEqual(Maybe(func), Just(func))
-        self.assertEqual(Just(func), JustMorphism(func))
+        self.assertEqual(Just(func), MaybeMorphism(func))
         self.assertNotEqual(Just(func), Just(lambda x: x+2))
 
         self.assertEqual(Maybe(sorted), Just(sorted))
-        self.assertEqual(Maybe(sorted), JustMorphism(sorted))
+        self.assertEqual(Maybe(sorted), MaybeMorphism(sorted))
 
         self.assertEqual(Maybe(12), Just(12))
         self.assertEqual(Maybe(12), MaybeElement(12))
-        self.assertEqual(MaybeElement(12), JustElement(12))
 
         self.assertEqual(Maybe(), Nothing())
-        self.assertEqual(Maybe(), NothingElement())
-        self.assertEqual(Nothing(), NothingElement())
+        self.assertEqual(Maybe(), MaybeElement())
+        self.assertEqual(Nothing(), MaybeElement())
 
         self.assertNotEqual(Just(None), Nothing())
         self.assertNotEqual(Just(tuple()), Nothing())
@@ -422,9 +484,9 @@ class MaybeTests(unittest.TestCase):
         """
         I'm not sure that I want these to be true, but they are ATM
         """
-        self.assertEqual(JustElement(sorted), JustMorphism(sorted))
-        self.assertEqual(NothingElement(), NothingMorphism())
-        self.assertEqual(Nothing(), NothingMorphism())
+        self.assertEqual(MaybeElement(sorted), MaybeMorphism(sorted))
+        self.assertEqual(MaybeElement(), MaybeMorphism())
+        self.assertEqual(Nothing(), MaybeMorphism())
 
         empty_just = Just(None)
         empty_just.data = tuple()
@@ -440,7 +502,7 @@ class MaybeTests(unittest.TestCase):
         self.assertEqual(list(iter(Nothing())), [])
         self.assertEqual(list(iter(Just(1))), [1])
         self.assertEqual(list(iter(Just((1, 2)))), [(1, 2)])
-        self.assertEqual(list(iter(NothingMorphism())), [])
+        self.assertEqual(list(iter(MaybeMorphism())), [])
 
     def test_append(self):
         self.assertEqual(Nothing().append(Nothing()), Nothing())
@@ -452,14 +514,14 @@ class MaybeTests(unittest.TestCase):
     #    """Tests the support function 'get', not really Maybe itself."""
     #    self.assertEqual(get('src')(img_tag1), img_tag1['src'])
 
-    #def test_f_apply(self):
-    #    maybe_j = Maybe(img_tag1)
+    def test_f_apply(self):
+        maybe_j = Maybe(img_tag1)
 
-    #    result1 = maybe_j.f_apply(get('src'))
-    #    self.assertEqual(
-    #        result1,
-    #        Just(get('src')(img_tag1))
-    #    )
+        result1 = maybe_j.f_apply(get('src'))
+        self.assertEqual(
+            result1,
+            Just(get('src')(img_tag1))
+        )
 
     #def test_constructor_element_default(self):
     #    """Only meaningful in concjunction to f_apply/f_map"""
