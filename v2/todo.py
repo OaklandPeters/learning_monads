@@ -32,4 +32,12 @@ Much-later steps:
 ** Alternately... just accept that it's not true in general, although it's useful.
 * Find monadic laws, and write MixinTests for them. Documentation for each test should include statement of the law. These should be used by mixing them onto the TestCase for speicifc monads. Test on ListMonadTests
 
+
+
+Interestingly, List.join and Maybe.join have the same join function.
+... Perhaps this points to a shared structure of any monoid, who
+has the property that *all* of their internal structure/data can
+be captured by a single internal tuple ('.data')?
+    I suspect that monads with 'context' (Tryit) will fail this.
+
 """

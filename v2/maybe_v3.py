@@ -80,24 +80,29 @@ class MaybeCategory(category.Category):
         if isinstance(element, Nothing):
             return Maybe(*other.data)
         elif isinstance(other, Nothing):
-            return Maybe(*self.data)
+            return Maybe(*element.data)
         # both are 'Just'
         # This is built to implicity use 'First' - take the left
         # This could be generalized by specifying a 'reducer' function parameter
+        # return Maybe(element.reducer(element, other))
         else:
-            return Maybe(*self.data)
+            return Maybe(*element.data)  # take the 'left'/'first'
 
     @classmethod
     def join(cls, element: 'MaybeElement'):
-        if isinstance(element, Just):
-            if isinstance(element.data, Nothing):
-                return Nothing()
-            elif isinstance(element.data, Just):
-                return Just(*element.data.data)
+        """
+        Interestingly, these looks very much like the 'join' for list.
+        ... Perhaps this points to a shared structure of any monoid, who
+        has the property that *all* of their internal structure/data can
+        be captured by a single internal tuple ('.data')?
+        """
+        accumulator = element.zero()
+        for value in element:
+            if isinstance(value, Maybe):
+                accumulator = accumulator.append(value)
             else:
-                return Just(*element.data)
-        else:
-            return element
+                accumulator = accumulator.append(Maybe(value))
+        return accumulator
 
     @classmethod
     def identity(cls):
@@ -391,71 +396,57 @@ class MaybeTests(unittest.TestCase):
             _not=(Just, category.Element)
         )
 
-    #def test_constructor_maybe(self):
-    #    self.assertEqual(Maybe('xx'), Just('xx'))
-    #    self.assertIsInstance(Maybe('xx'), Just)
-    #    self.assertIsInstance(Maybe(), Nothing)
-
-    #def test_constructor_just(self):
-    #    self.is_all_types(
-    #        Just('xx'),
-    #        (Just, Maybe, category.Element),
-    #        _not=(Nothing, category.Morphism)
-    #    )
-    #    self.assertRaises(
-    #        (AssertionError, TypeError), lambda: Just() 
-    #    )
-    #    self.is_all_types(
-    #        Nothing(),
-    #        _is=(Maybe, Nothing, category.Element),
-    #        _not=(Just, category.Morphism),
-    #    )
-
-
-    #    # morph = Just(value=lambda _str: _str+_str, default=_NotPassed)
-    #    # print()
-    #    # print("isinstance(morph, category.Morphism):", type(isinstance(morph, category.Morphism)), isinstance(morph, category.Morphism))
-    #    # print()
-    #    # import ipdb
-    #    # ipdb.set_trace()
-    #    # print()
-
-    #    # self.is_all_types(
-    #    #     Just(lambda _str: _str+_str),
-    #    #     (Maybe, Just, NotType(Nothing),
-    #    #      NotType(category.Element), category.Morphism)
-    #    # )
-
-    #def test_constructor_nothing(self):
-    #    self.assertEqual(Maybe.zero(), Nothing())
-    #    self.assertNotEqual(Just(None), Nothing())
-    #    self.assertEqual(Maybe(), Nothing())
-    #    empty_just = Just(None)
-    #    empty_just.data = _NotPassed
-    #    self.assertEqual(empty_just, Nothing())
-
-    #def test_iterator(self):
-    #    self.assertEqual(list(iter(Nothing())), [])
-    #    self.assertEqual(list(iter(Just(1))), [1])
-    #    self.assertEqual(list(iter(Just(1, 2))), [1, 2])
-    #    self.assertEqual(list(iter(Just(1, Just(2, 3)))), [1, 2, 3])
-
-    #def test_append(self):
-    #    this = Maybe.zero()
-    #    self.assertEqual(this, Nothing())
+    def test_constructor_equality(self):
+        self.assertEqual(Maybe('xx'), Just('xx'))
         
-    #    this = this.append(Just(1))
-    #    self.assertEqual(this, Just(1))
+        func = lambda x: x+2
+        self.assertEqual(Maybe(func), Just(func))
+        self.assertEqual(Just(func), JustMorphism(func))
+        self.assertNotEqual(Just(func), Just(lambda x: x+2))
 
-    #    this = this.append(Just(2))
-    #    self.assertEqual(this, Just(1, Just(2)))
+        self.assertEqual(Maybe(sorted), Just(sorted))
+        self.assertEqual(Maybe(sorted), JustMorphism(sorted))
 
-    #    this = this.append(Just(3))
-    #    self.assertEqual(this, Just(1, Just(2, Just(3))))
+        self.assertEqual(Maybe(12), Just(12))
+        self.assertEqual(Maybe(12), MaybeElement(12))
+        self.assertEqual(MaybeElement(12), JustElement(12))
 
-    #    this = this.append(Just(4, 5))
-    #    self.assertEqual(this,
-    #        Just(1, Just(2, Just(3, Just(4, 5)))))
+        self.assertEqual(Maybe(), Nothing())
+        self.assertEqual(Maybe(), NothingElement())
+        self.assertEqual(Nothing(), NothingElement())
+
+        self.assertNotEqual(Just(None), Nothing())
+        self.assertNotEqual(Just(tuple()), Nothing())
+
+    def test_dubious_equalities(self):
+        """
+        I'm not sure that I want these to be true, but they are ATM
+        """
+        self.assertEqual(JustElement(sorted), JustMorphism(sorted))
+        self.assertEqual(NothingElement(), NothingMorphism())
+        self.assertEqual(Nothing(), NothingMorphism())
+
+        empty_just = Just(None)
+        empty_just.data = tuple()
+        self.assertEqual(empty_just, Nothing())
+
+    def test_constructor_nothing(self):
+        self.assertEqual(Maybe.zero(), Nothing())
+        self.assertNotEqual(Just(None), Nothing())
+        self.assertEqual(Maybe(), Nothing())
+
+
+    def test_iterator(self):
+        self.assertEqual(list(iter(Nothing())), [])
+        self.assertEqual(list(iter(Just(1))), [1])
+        self.assertEqual(list(iter(Just((1, 2)))), [(1, 2)])
+        self.assertEqual(list(iter(NothingMorphism())), [])
+
+    def test_append(self):
+        self.assertEqual(Nothing().append(Nothing()), Nothing())
+        self.assertEqual(Nothing().append(Just('xy')), Just('xy'))
+        self.assertEqual(Just('xy').append(Nothing()), Just('xy'))
+        self.assertEqual(Just(1).append(Just(2)), Just(1))
 
     #def test_getter(self):
     #    """Tests the support function 'get', not really Maybe itself."""
@@ -504,11 +495,11 @@ class MaybeTests(unittest.TestCase):
     #        Maybe(img_tag1).a_apply(Maybe(get('data-src'))).a_apply(Maybe(get('src')))
     #    )
 
-    #def test_join(self):
-    #    self.assertEqual(Just('xx').join(), Just('xx'))
-    #    self.assertEqual(Maybe().join(), Nothing())
-    #    self.assertEqual(Just(Just('xx')).join(), Just('xx'))
-    #    self.assertEqual(Just(Nothing()).join(), Nothing())
+    def test_join(self):
+        self.assertEqual(Just('xx').join(), Just('xx'))
+        self.assertEqual(Maybe().join(), Nothing())
+        self.assertEqual(Just(Just('xx')).join(), Just('xx'))
+        self.assertEqual(Just(Nothing()).join(), Nothing())
         
     #    # Handling of default
     #    self.assertEqual(
