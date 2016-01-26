@@ -1,22 +1,11 @@
 """
-Resolution: 
-    allow specifying Zero, Append, Join independently for
-Morphisms in a category.
 
-Zero --> Identity
-Append --> Compose
-Join --> Combine
+Todo:
+* Make CategoryBase abstracts, and have Monoid, Morphism, and Element inherit from it
 
-.. OR NOT
-because the normal morphisms for that Monad PLUS the rules for applicative, imply the nonsense
-
-This all relates to needing 'Compose', which I want to use for defining '>>'
 """
 import typing
 from abc import abstractmethod, abstractproperty
-
-# class CategoryMeta(type):
-#     """Placeholder"""
 
 
 class classproperty(object):
@@ -101,6 +90,10 @@ class Element(Monoid):
     And also, we want to be able to pattern match/distinguish functions
     from objects/elements.
     """
+    @classmethod
+    def lift(cls, *values):
+        return cls.Element(*values)
+
     def f_apply(self, function):
         return self.Category.f_apply(self, function)
 
@@ -133,11 +126,16 @@ class Morphism(Monoid):
 
     This has monoidal structure via Identity, Compose, and Collapse. Zero/Append/Join are just proxies to these functions.
     """
+
     def a_map(self):
         return self.Category.a_map(self)
 
     def __call__(self, *args):
         return self.a_map()(self.Element(*args))
+
+    @classmethod
+    def lift(cls, *values):
+        return cls.Morphism(*values)
 
     @classmethod
     def identity(self):

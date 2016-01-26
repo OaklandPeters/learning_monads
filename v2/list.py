@@ -73,12 +73,13 @@ class ListCategory(category.Category):
             if isinstance(elm, List):
                 accumulator = accumulator.append(elm)
             else:
-                accumulator = accumulator.append(cls.lift(elm))
+                #accumulator = accumulator.append(cls.lift(elm))
+                accumulator = accumulator.append(element.lift(elm))
         return accumulator
 
-    @classmethod
-    def lift(cls, value):
-        return List(value)
+    #@classmethod
+    #def lift(cls, value):
+    #    return List(value)
 
     @classmethod
     def identity(cls):
@@ -101,7 +102,7 @@ class ListCategory(category.Category):
         return accumulator
 
 
-class List(category.Monad):
+class List(category.Monad, metaclass=ListCategory):
     """
     Used for type-checking, pattern recognition, and it's constructor
     """
