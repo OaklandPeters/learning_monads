@@ -159,6 +159,14 @@ class Morphism(Monoid):
         Proxies to category.collapse"""
         return self.Category.collapse(self)
 
+    # Utility function
+    # Not directly related to Monad/Category structure
+    @classmethod
+    def _validation(cls, *data):
+        if not all(isinstance(value, typing.Callable) for value in data):
+            raise TypeError("All arguments to Morphism must be callable.")
+        return data
+
 
 class Monad(Monoid):
     """
@@ -194,3 +202,14 @@ def apply_recursively(function, guard=Element):
         else:
             return function(obj)
     return wrapper
+
+
+def check_validation(cls, *args, **kwargs) -> None:
+    """Checks all validation functions defined on
+    classes in MRO of 'cls'.
+    These functions should be classmethods which raise TypeError or return None.
+    """
+    for klass in cls.__mro__:
+        # does 'klass' define it's own '_validation' method
+        if '_validation' in klass.__dict__:
+            klass._validation(*args, **kwargs)
