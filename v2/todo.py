@@ -27,6 +27,7 @@ Much-later steps:
 * Unit-test mixin for monoid, based on the laws here: https://hackage.haskell.org/package/base-4.8.2.0/docs/Data-Monoid.html
 * Incorporate Foldable and Traversable into the Pythonic hierarchy
 * Try to Rework to try to simplify the hierarchy, to merge ListCategory and List
+* Make CategoryBase abstracts, and have Monoid, Morphism, and Element inherit from it
 * Try to work in material to translate Transverable to Python (this might be fairly complicated)
 ** Possible fix: give CategoryBase a 'Domain' or some other checker function that can be used.
 ** Alternately... just accept that it's not true in general, although it's useful.
@@ -39,5 +40,14 @@ Interestingly, List.join and Maybe.join have the same join function.
 has the property that *all* of their internal structure/data can
 be captured by a single internal tuple ('.data')?
     I suspect that monads with 'context' (Tryit) will fail this.
+
+
+IDEA:
+to auto-generate Morphism/Element, inside the appropraite CategoryBase.
+Then, these are provided at the module level as 'list.Morphism', 'list.Element'.
+PROBLEM: when I want or need to override the behavior/construction, as in maybe_v3.py.
+PROBLEM: providing Element/Morphism specific utility methods
+ADVANTAGES: cuts down on the cruft considerably.
+STRATEGY: to override the behavior, those class constructions can be made, and CACHED, inside 'ListBase.Element', etc
 
 """
