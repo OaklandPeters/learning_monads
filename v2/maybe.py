@@ -1,257 +1,169 @@
 """
+Simple Version
+---------------
+This version is drafted in response to the realization that I was writing a too-sophisticated version of Maybe. The normal Maybe (as described in tutorials, and Haskell), does not have the 'chaining' and 'remembering the context' behaviors that I was wanting.
+
+    Those behaviors resemble a combination monad: List of Maybe with some State aspects.
+
+    Consequently, I'm going to write that simple version of Maybe, and come back at the complex version as a later project.
+
+
+What This version DOES:
+------------------------
+Allows creating a chain of computations, any one of which might fail - without later steps crashing (they get set to 'Nothing' instead).
+
+YES:
+    Maybe(name) >> name_to_id >> id_to_account >> account_to_balance
+
+What This version does NOT:
+-----------------------------
+Allow creating a lazy-series of alternate attempts, and then it takes the first or last one which succeeds.
+
+NO:
+    Maybe(user_record) >> id_by_name >> id_by_address >> id_by_email
+
+
+
+
+EVEN SIMPLER
+--------------
+BUGFIX: What about if Just(tuple())
+
+
 First-steps:
-* Tests for a_apply; test_a_apply_empty
-* a_apply/a_map
-* m_apply/m_map
-* Tests for a_map
-* Tests for m_apply
-* Tests for m_map
-* Tests for append, join for 
-* for a_apply/a_map, need a way to chain/prioritize checking .default between element and morphism
-* Signature for Maybe.__init__(self, value=(,), default=_NotPassed). Get MaybeElement/MaybeMorphism to defer to it.
-* MaybeCategory.first, .last. Recursive join() operations.
-* test_join_first(), test_join_last()
-* Maybe         -->   (MaybeElement, MaybeMorphism)
-* Maybe  -|sugar|->   (Just, Nothing)
-* PROBLEM: for Maybe, 'm_apply' is sensible, but f_apply and a_apply are not.
-
-CRUX OF FIRST/LAST:
-whether to apply the function in f_apply when element is Nothing()
-... maybe, apply the function to both element.data and element.default, and first/last determines which of left or right to take
-
-
-Next-steps:
-* Cleanup repetition in Maybe.__new__
-* Change Nothing to be Just with .data = (), since this hooks the behavior of zero/append/just to the behavior of tuples
-* Change inheritance, Nothing inherits from MaybeElement, but not Just
-* rewrite join as a reduction. Write 'first'/'last' as arguments into join, taking advantage of chain on .default
-* simplify conditional logic in Maybe.__new__. Preferablly by dispatching.
-* Simplify structure, by making Nothing simply Maybe.zero. Have to change all statements checking, 'isinstance(element, Nothing)'
-* Have classes for type-product of (Just, Nothing) and (Element, Morphism). So Maybe-->(Just, Nothing)-->(JustElement, NothingElement, JustMorphism, NothingMorphism)
-** OR MAYBE: Make 'Nothing' just be sugar over an empty Just(), with an override for __instancecheck__, __subclasscheck__, and __new__. ? Should Just.__new__
-** The idea here is to have the only data type be 'MaybeElement'/'MaybeMorphism', and have Just/Nothing simply be used for type-checking and constructors.
-* Cleanup __repr__ functions. Better display for _NotPassed, and simpler display for Nothing(). Since Nothing() should only be sugar around MaybeElement, handle this behavior in Maybe.__repr__
+* Update old unit-tests for the updated version(s)
+* Constructor for Maybe dispatches to MaybeElement and MaybeMorphism
+* Constructor for MaybeElement dispatches to JustElement and NothingElement
+* Constructor for MaybeMorphism dispatches to JustMorphism and NothingMorphism
+* Add __instancecheck__ and __subclasscheck__ to category.Category, and make MaybeCategory used as a metaclass. (lookup how to do this from mfpy). Hard part - do it while allowing normal 'isinstance' to work when not overridden
+* Just/Nothing should override __instancecheck__ and __subclasscheck__
+* Override __call__ for identity element of Morphism
 
 
 Later-steps:
-* Change default to use _NotPassed
-* Incorporate support functions and methods from https://hackage.haskell.org/package/base-4.8.1.0/docs/Data-Maybe.html#t:Maybe, such fromMaybe, fromJust
-* Consider the handling of 'default'. In f_apply/a_apply, when element is Nothing, which should be returned: element.default or morphism.default.
+* Consider if check_validation can be moved into __new__ somehow (metaclass?)
+* Copy-in some of the todo from the original maybe.py
+* CONSIDER: making just one large __new__ type function, and having everything else proxy to it.
+* In MaybeCategory() replace 'Nothing()' calls with a constructor (this is basically a 'zero()' overideable at the instance level)
 
-
-BEWARE: Potentially recursive process with .join(), for elements which are Nothing, if it's data is set to Nothing.  a = Nothing(), b = Nothing(), a.data = b, b.data = a
-BUGCHECK THIS
-    ... this is actually rationanl behavior, because it's like a looped list
-
-
-
-
-PROBLEM:
-This doesn't really let me write the chain of tries, where you take the first valid one.
-BECAUSE, chaining f_apply on Maybe, keeps applying the later ones. Rather than stopping as soon as it has a valid one.
-
-
-def get_src(img_tag):
-    retrun Maybe(img_tag) >> get('src') >> get('data_src') >> get('data-srcset')
+Much-later steps:
+* Form plan for more advanced 'TryIt' class - which must maintain context (and validate for it)
+* Make an Adapator or new monad, for either Maybe or TryIt - which catches exceptions, and recasts to Nothing
+* IDEA: Catcher monad, which is a monad on functions. Catcher(IndexError).f_apply(get('src'))
 """
 import typing
 
 import category
 from category import classproperty
 
+__all__ = [
+    'MaybeCategory', 'Maybe', 'MaybeElement', 'MaybeMorphism',
+    'Just', 'Nothing'
+]
 
-class _NotPassed: pass
-
-class MaybeCategory:
-    """
-    Intuition: some function(s) here need to map the function over (element.data, element.default), and have a decision function on which to take.
-        pymonad.Maybe's Last/First do it via .append
-    First/Last are Monoids which wrap around Maybe values, but are NOT Maybes
-    First.append(element, other):
-        if isinstance(element.data, Nothing): return other
-        else: return element
-    Last.append(element, other):
-        if isinstance(element.data, Nothing): return element
-        else: return other
-
-
-    HANDLING DEFAULTS . . .
-    ---------
-    double = lambda obj: obj+obj
-    Just('x', 'y').f_apply(double) # Just('xx', 'yy')
-
-    def double_just(obj):
-        return Just(obj + obj)
-    Just('x', 'y').m_apply(double_just)  # Just(Just('xx'), Just('yy'))
-    """
-
-
+class MaybeCategory(category.Category):
     @classmethod
     def f_apply(cls, element, function):
-        """
-        If element is Nothing, returns the default value, else
-        applies the function to contents of element, and
-        returns wrapped in a 'Just'
-
-        Note: This is making the assumption to treat 'None' like Nothing()
-         
-        @todo: decide how this should treat elements with a default specified.
-        if isinstance(element, Nothing):
-            # I .. think I'd like this to recurse down the default (hence, recursively claling f_apply), BUT... that requires dispatching on the type of .default
-            
-            if isinstance(element, Nothing):
-                if isinstance(element.default, Maybe):
-                    return element.default.f_apply(function)
-                else:
-                    # @todo: Quandry - what if element.default==Nothing ??
-                    return Just(element.default)
-            # isinstance(element, Just)
-            else:
-                return Just(element.data)
-
-        """
-        if isinstance(element, Nullish):
-            return element.default
-        else:
-            return Just(function(element.data))
-
-    @classmethod
-    def _apply(cls, value: typing.Union[Any, 'Element'], function):
-        if isinstance(value, Nothing):
-            return Nothing
-        else:
-            return function(value)
-
-    @classmethod
-    def f_map(cls, function, default=None):
-        def wrapper(element):
-            return cls.f_apply(element, function, default)
-        return wrapper
-
-    @classmethod
-    def a_apply(cls, element, morphism: 'MaybeMorphism'):
-        """
-        
-        what should be Just('x').a_apply(Nothing()) ?
-        By analogy with List(), it would be == Nothing()
-        """
         accumulator = element.zero()
-        if isinstance(morphism, Nothing):
-            accumulator.append(Nothing())
-        else:
-            accumulator.append(element.f_apply(morphism.data))
+        # If isinstnace(element, Nothing), this will do nothing
+        for value in element:
+            accumulator = accumulator.append(Just(function(value)))
+        return accumulator
+
+    @classmethod
+    def a_apply(cls, element, morphism):
+        accumulator = element.zero()
+        # If isinstance(morphism, Nothing), then this will do nothing
+        for func in morphism:
+            accumulator = accumulator.append(element.f_apply(func))
         return accumulator.join()
 
     @classmethod
-    def a_map(cls, morphism: 'MaybeMorphism'):
-        def wrapper(element: 'MaybeElement'):
-            return cls.a_apply(element, morphism)
-        return wrapper
-
-
-    @classmethod
-    def m_apply(cls, element: 'MaybeElement',
-                constructor: typing.Callable[[typing.Any], 'MaybeElement']) -> 'MaybeElement':
+    def m_apply(cls, element, constructor):
         return element.f_apply(constructor).join()
 
     @classmethod
     def zero(cls):
-        return Nothing()
+        return MaybeElement()
 
     @classmethod
-    def append(cls, left: 'Maybe', right: 'Maybe'):
+    def append(cls, element, other):
         """
-        Hard to understand for elements which are Just
-        Just(12).append('ya')  .... doesn't make sense to me
-        Although Nothing.append does...
-        Nothing().append('ya') ==  Just('ya')
-        HAskell: 
-        instance Monoid a => Monoid (Maybe a) where
-          mempty = Nothing
-          Nothing `mappend` m = m
-          m `mappend` Nothing = m
-          Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
-
-        @todo: FUTURE - have the while/recurse process keep a memory to prevent loops
+         Alternate v2:
+         return Maybe(*element.reducer(element, other))
+         def first(self, other):
+             return self
+         def last(self, other):
+             return other
         """
-        if not isinstance(left, Maybe):
-            raise TypeError("left must be 'Maybe', not "+left.__class__.__name__)
-        
-        return cls._append(left, right)
-
-    @classmethod
-    def _append(cls, left: 'Any', right: 'Maybe'):
-        """Recursive utility function for .append() method"""
-        if isinstance(left, Just):
-            return Just(left.data, cls._append(left.default, right))
+        if isinstance(element, Nothing):
+            return element.lift(*other.data)
+        elif isinstance(other, Nothing):
+            return element.lift(*element.data)
+        # both are 'Just'
+        # This is built to implicity use 'First' - take the left
+        # This could be generalized by specifying a 'reducer' function parameter
+        # return Maybe(element.reducer(element, other))
         else:
-            return right
+            return element.lift(*element.data)  # take the 'left'/'first'
 
     @classmethod
-    def join(cls, element: 'Maybe'):
+    def join(cls, element: 'MaybeElement'):
         """
-
-        Complication, to properly chain/nest Maybe via default
-            Maybe('a', default=Maybe('b', default=Maybe('c', default='d')))
-
-        data
-            | non-monad --> no changes
-            | Nothing --> 
-            | Just --> destructure
-
+        Interestingly, these looks very much like the 'join' for list.
+        ... Perhaps this points to a shared structure of any monoid, who
+        has the property that *all* of their internal structure/data can
+        be captured by a single internal tuple ('.data')?
         """
-        # element.data is a Just: Just(Just('x')).join()
-        if isinstance(element.data, Just) and not isinstance(element.data, Nothing):
-            return Maybe(element.data.data, element.data.default)
-        # Since .data is nothing, fallback to default
-        elif isinstance(element.data, Nothing):
-            return Maybe(element.default).join()
-        # .data is normal non-Maybe-monad value --> no changes
-        else:
-            return Maybe(element.data, element.default)
+        accumulator = element.zero()
+        for value in element:
+            if isinstance(value, Maybe):
+                accumulator = accumulator.append(value)
+            else:
+                accumulator = accumulator.append(Maybe(value))
+        return accumulator
+
+    @classmethod
+    def identity(cls):
+        return MaybeMorphism()
+
+    @classmethod
+    def compose(cls, morphism: 'MaybeMorphism', other: 'MaybeMorphism'):
+        """Uses the same logic as Element.append."""
+        return cls.append(morphism, other)
+
+    @classmethod
+    def collapse(cls, morphism):
+        accumulator = morphism.identity()
+        for value in morphism.data:
+            if isinstance(value, MaybeMorphism):
+                accumulator = accumulator.append(value)
+            else:
+                accumulator = accumulator.append(MaybeMorphism(value))
+        return accumulator
 
 
-class Maybe(category.Monad):
-    def __new__(cls, value=_NotPassed, default=_NotPassed):
+class Maybe(category.Monad, metaclass=MaybeCategory):
+    def __new__(cls, *data):
         """
-        Dispatches to Morphism/Element classes where possible,
-        as the Monad is not meant to be directly instantiatable.
+        Delegates to Morphism/Element classes where possible,
+        as the Monad is not meant to be directly instantiated.
+        However, you can call 'Maybe' as a constructor.
         Requires instantiated Morphism and Element class properties.
-
-        
-        ?? What about condition that: value=_NotPassed and default=*actual-value*?
-
         """
-        # If this was called via Just(), Nothing(), or MaybeMorphism(),
-        #    (as oppsed to Maybe())
-        #    then set the class equal to that
-        if issubclass(cls, category.Element) or issubclass(cls, category.Morphism):
-            self = object.__new__(cls)
-            self.__init__(value, default=default)
-            return self
-        
-        # Treat as Nothing()
-        elif value is _NotPassed:
-            self = object.__new__(Nothing)
-            self.__init__(value, default=default)
-            return self
-
-        # Treat as Morphism
-        elif isinstance(value, typing.Callable):
-            self = object.__new__(MaybeMorphism)
-            self.__init__(value, default=default)
-            return self
-
-        # Treat as Just
+        if len(data) == 0:
+            return MaybeElement.__new__(cls, *data)
+        elif all(isinstance(elm, typing.Callable) for elm in data):
+            return MaybeMorphism.__new__(cls, *data)
         else:
-            self = object.__new__(Just)
-            self.__init__(value, default=default)
-            return self
+            return MaybeElement.__new__(cls, *data)
 
-    def __init__(self, value=_NotPassed, default=_NotPassed):
-        """Shared by Element/Morphism and Just/Nothing."""
-        self.data = value
-        self.default = default
+    def __init__(self, *data):
+        """All subclasses presently use this one initialization function.
+        Input validation can be added by defining a '_validation' classmethod
+        """
+        category.check_validation(type(self), *data)
+        self.data = data
 
     @classproperty
     def Category(cls):
@@ -267,62 +179,84 @@ class Maybe(category.Monad):
 
     def __eq__(self, other):
         if isinstance(other, Maybe):
-            return (self.data == other.data) and (self.default == other.default)
+            return (self.data == other.data)
         else:
-            return None
+            return False
 
     def __repr__(self):
-        return "{0}({1}, default={2})".format(
+        return "{0}{1}".format(
             self.__class__.__name__,
-            repr(self.data),
-            repr(self.default)
+            repr(self.data)
         )
 
     def __iter__(self):
-        if self.data is not _NotPassed:
-            yield self.data
-        # yield self.data
-        if isinstance(self.default, Maybe):
-            yield from self.default
-        else:
-            # yield self.default
-            if self.default is not _NotPassed:
-                yield self.default
+        yield from self.data
 
+    @classmethod
+    def _validation(cls, *data):
+        if len(data) > 1:
+            raise TypeError("Maybe objects must receive 0 or 1 arguments, not "+len(data))
 
 
 class MaybeElement(category.Element, Maybe):
-    """Exists only be base class for Just and Nothing."""
+    """
+
+    """
+    def __new__(cls, *data):
+        category.check_validation(cls, *data)
+        return object.__new__(MaybeElement)
 
 
 class MaybeMorphism(category.Morphism, Maybe):
-    """@todo: Should also have Just/Nothing versions."""
-
-
-class Just(MaybeElement):
     """
-    'default' forms the implicit 'or else...' inside Maybe's structure
-    It is used for chaining
+    #Delegates to JustElement/NothingElement
     """
-    def __init__(self, value=_NotPassed, default=_NotPassed):
-        if value is _NotPassed:
-            raise TypeError("No value provided to Just( )")
-        super(Just, self).__init__(value, default)
+    def __new__(cls, *data):
+        category.check_validation(cls, *data)
+        return object.__new__(MaybeMorphism)
 
 
-class Nothing(MaybeElement):
-    def __init__(self, value=_NotPassed, default=_NotPassed):
-        if value is not _NotPassed:
-            raise TypeError("Nothing() should not have a value provided.")
-        # ? assert default is _NotPassed
-        # ... for now I'll let a default be specified for Nothing
-        super(Nothing, self).__init__(value, default)
-            
 
+#
+#   Testing Just/Nothing as convenience functions
+#
+#
+class Just(Maybe):
+    def __new__(cls, *data):
+        cls._validation(*data)
+        if all(isinstance(elm, typing.Callable) for elm in data):
+            return MaybeMorphism(*data)
+        else:
+            return MaybeElement(*data)
 
-Null = Nothing()
+    @classmethod
+    def _validation(cls, *data):
+        if len(data) != 1:
+            raise TypeError("Just() must receive exactly one argument")
 
-Nullish = (type(None), Nothing)
+    @classmethod
+    def __instancecheck__(cls, instance):
+        if isinstance(instance, Maybe):
+            if len(instance.data) == 1:
+                return True
+        return False
+
+class Nothing(Maybe):
+    def __new__(cls, *data):
+        cls._validation(*data)
+        return MaybeElement(*data)
+
+    @classmethod
+    def _validation(cls, *data):
+        if len(data) != 0:
+            raise TypeError("Nothing() does not accept arguments.")
+
+    @classmethod
+    def __instancecheck__(cls, instance):
+        if isinstance(instance, Maybe):
+            if len(instance.data) == 0:
+                return True
+        return False
 
 
 
@@ -331,21 +265,18 @@ Nullish = (type(None), Nothing)
 #-----------
 import unittest
 
-def get(index, default=None):
+
+def get(index):
     def wrapper(record):
-        try:
-            return record[index]
-        except (IndexError, KeyError, TypeError):
-            return default
+        return record[index]
     return wrapper
 
-def getter_bind(index):
+def maybe_get(index):
     def wrapper(record):
-        try:
-            value = record[index]
-        except (IndexError, KeyError, TypeError):
+        if index in record:
+            return Just(record[index])
+        else:
             return Nothing()
-        return Just(value)
     return wrapper
 
 img_tag1 = {
@@ -360,140 +291,180 @@ img_tag3 = {
 }
 
 
-class NotKlassMeta(type):
-    def __instancecheck__(self, value):
-        return not isinstance(value, self._klass)
-    @classmethod
-    def __subclasscheck__(cls, subclass):
-        return not issubclass(value, cls._klass)
-
-class NotType:
-    """Sugar/Convenience for type-checking the opposite of types."""
-    def __new__(cls, _klass):
-        class NotKlass(metaclass=NotKlassMeta):
-            pass
-        NotKlass._klass = _klass
-        NotKlass.__name__ = 'Not_' + _klass.__name__
-        return NotKlass
-
-
-
 class MaybeTests(unittest.TestCase):
-    def is_all_types(self, obj, _types: typing.Tuple[type]):
-        if not isinstance(_types, tuple):
-            _types = (_types, )
-        for _type in _types:
+    def assert_is_instances(self, obj, _is, _not):
+        if not isinstance(_is, tuple):
+            _is = (_is, )
+        if not isinstance(_not, tuple):
+            _not = (_not, )
+        for _type in _is:
             self.assertIsInstance(obj, _type)
+        for _type in _not:
+            self.assertNotIsInstance(obj, _type)
 
-    def test_constructor_maybe(self):
+    def assert_is_subclasses(self, obj, _is, _not):
+        if not isinstance(_is, tuple):
+            _is = (_is, )
+        if not isinstance(_not, tuple):
+            _not = (_not, )
+        for _type in _is:
+            self.assertTrue(issubclass(obj, _type))
+        for _type in _not:
+            self.assertFalse(issubclass(obj, _type))
+
+    def test_constructor_dispatching(self):
+        # Convenience functions
+        def is_je(obj):
+            return self.assert_is_instances(obj,
+                _is=(Maybe, Just, category.Element, category.Monoid),
+                _not=(Nothing, category.Morphism)
+            )
+        def is_ne(obj):
+            return self.assert_is_instances(obj,
+                _is=(Maybe, Nothing, category.Element, category.Monoid),
+                _not=(Just, category.Morphism)
+            )
+        def is_jm(obj):
+            return self.assert_is_instances(obj,
+                _is=(Maybe, Just, category.Morphism, category.Monoid),
+                _not=(Nothing, category.Element)
+            )
+        def is_nm(obj):
+            return self.assert_is_instances(obj,
+                _is=(Maybe, Nothing, category.Morphism, category.Monoid),
+                _not=(Just, category.Element)
+            )
+
+        is_ne(Maybe())
+        is_je(Maybe('xx'))
+        is_jm(Maybe(sorted))
+
+        self.assertRaises(TypeError, lambda: Just())
+        is_je(Just('xx'))
+        is_jm(Just(sorted))
+
+        is_ne(Nothing())
+        self.assertRaises(TypeError, lambda: Nothing('xx'))
+        self.assertRaises(TypeError, lambda: Nothing(sorted))
+
+        is_ne(MaybeElement())
+        is_je(MaybeElement('xx'))
+        is_je(MaybeElement(sorted))
+
+        is_nm(MaybeMorphism())
+        self.assertRaises(TypeError, lambda: MaybeMorphism('xx'))
+        is_jm(MaybeMorphism(sorted))
+
+    def test_multi_argument_constructor(self):
+        self.assertRaises(TypeError, lambda: Maybe(1, 2))
+        self.assertRaises(TypeError, lambda: Just(1, 2))
+        self.assertRaises(TypeError, lambda: MaybeMorphism(1, 2))
+
+    def test_constructor_equality(self):
         self.assertEqual(Maybe('xx'), Just('xx'))
-        self.assertIsInstance(Maybe('xx'), Just)
-        self.assertIsInstance(Maybe(), Nothing)
+        
+        func = lambda x: x+2
+        self.assertEqual(Maybe(func), Just(func))
+        self.assertEqual(Just(func), MaybeMorphism(func))
+        self.assertNotEqual(Just(func), Just(lambda x: x+2))
 
-    def test_constructor_just(self):
-        self.is_all_types(
-            Just('xx'), (Just, Maybe, NotType(Nothing),
-                         category.Element, NotType(category.Morphism))
-        )
-        self.assertRaises(
-            (AssertionError, TypeError), lambda: Just() 
-        )
-        self.is_all_types(
-            Nothing(), (Maybe, NotType(Just), Nothing, 
-                     category.Element, NotType(category.Morphism))
-        )
+        self.assertEqual(Maybe(sorted), Just(sorted))
+        self.assertEqual(Maybe(sorted), MaybeMorphism(sorted))
 
+        self.assertEqual(Maybe(12), Just(12))
+        self.assertEqual(Maybe(12), MaybeElement(12))
 
-        # morph = Just(value=lambda _str: _str+_str, default=_NotPassed)
-        # print()
-        # print("isinstance(morph, category.Morphism):", type(isinstance(morph, category.Morphism)), isinstance(morph, category.Morphism))
-        # print()
-        # import ipdb
-        # ipdb.set_trace()
-        # print()
+        self.assertEqual(Maybe(), Nothing())
+        self.assertEqual(Maybe(), MaybeElement())
+        self.assertEqual(Nothing(), MaybeElement())
 
-        # self.is_all_types(
-        #     Just(lambda _str: _str+_str),
-        #     (Maybe, Just, NotType(Nothing),
-        #      NotType(category.Element), category.Morphism)
-        # )
+    def test_non_ambiguated(self):
+        self.assertNotEqual(Just(None), Nothing())
+        self.assertNotEqual(Just(tuple()), Nothing())
+
+    def test_dubious_equalities(self):
+        """
+        I'm not sure that I want these to be true, but they are ATM
+        """
+        self.assertEqual(MaybeElement(sorted), MaybeMorphism(sorted))
+        self.assertEqual(MaybeElement(), MaybeMorphism())
+        self.assertEqual(Nothing(), MaybeMorphism())
+
+        empty_just = Just(None)
+        empty_just.data = tuple()
+        self.assertEqual(empty_just, Nothing())
 
     def test_constructor_nothing(self):
         self.assertEqual(Maybe.zero(), Nothing())
         self.assertNotEqual(Just(None), Nothing())
         self.assertEqual(Maybe(), Nothing())
-        empty_just = Just(None)
-        empty_just.data = _NotPassed
-        self.assertEqual(empty_just, Nothing())
+
 
     def test_iterator(self):
         self.assertEqual(list(iter(Nothing())), [])
         self.assertEqual(list(iter(Just(1))), [1])
-        self.assertEqual(list(iter(Just(1, 2))), [1, 2])
-        self.assertEqual(list(iter(Just(1, Just(2, 3)))), [1, 2, 3])
+        self.assertEqual(list(iter(Just((1, 2)))), [(1, 2)])
+        self.assertEqual(list(iter(MaybeMorphism())), [])
 
     def test_append(self):
-        this = Maybe.zero()
-        self.assertEqual(this, Nothing())
-        
-        this = this.append(Just(1))
-        self.assertEqual(this, Just(1))
-
-        this = this.append(Just(2))
-        self.assertEqual(this, Just(1, Just(2)))
-
-        this = this.append(Just(3))
-        self.assertEqual(this, Just(1, Just(2, Just(3))))
-
-        this = this.append(Just(4, 5))
-        self.assertEqual(this,
-            Just(1, Just(2, Just(3, Just(4, 5)))))
-
-    def test_getter(self):
-        """Tests the support function 'get', not really Maybe itself."""
-        self.assertEqual(get('src')(img_tag1), img_tag1['src'])
+        self.assertEqual(Nothing().append(Nothing()), Nothing())
+        self.assertEqual(Nothing().append(Just('xy')), Just('xy'))
+        self.assertEqual(Just('xy').append(Nothing()), Just('xy'))
+        self.assertEqual(Just(1).append(Just(2)), Just(1))
 
     def test_f_apply(self):
-        maybe_j = Maybe(img_tag1)
-
-        result1 = maybe_j.f_apply(get('src'))
         self.assertEqual(
-            result1,
-            Just(get('src')(img_tag1))
+            Maybe(img_tag1).f_apply(get('src')),
+            Just(img_tag1['src'])
         )
-
-    def test_constructor_element_default(self):
-        """Only meaningful in concjunction to f_apply/f_map"""
 
     def test_f_apply_chaining(self):
         self.assertEqual(
-            Maybe(img_tag1).f_apply(get('data-src')).f_apply(get('src')),
-            Just(Nothing())
+            Nothing().f_apply(get('data-src')),
+            Nothing()
         )
         self.assertEqual(
-            Maybe(img_tag1).f_apply(get('src')).f_apply(get('data-src')),
-            Just(Nothing())
+            Maybe(img_tag1).f_apply(get('src')),
+            Just('path: src')
         )
-    
-    def test_a_apply_chaining(self):
-        just_elm = Maybe(img_tag1)
-        just_morph1 = Maybe(get('data-src'))
-        just_morph2 = Maybe(get('src'))
-        res1 = Maybe(img_tag1).a_apply(Maybe(get('data-src')))
-        res2 = res1.a_apply(Maybe(get('src')))
 
-
-        print()
-        print("res1:", type(res1), res1)
-        print("res2:", type(res2), res2)
-        print()
-        import ipdb
-        ipdb.set_trace()
-        print()
-        
-
+    def test_a_apply(self):
         self.assertEqual(
-            Maybe(img_tag1).a_apply(Maybe(get('data-src'))).a_apply(Maybe(get('src')))
+            Maybe(img_tag1).a_apply(Just(get('src'))),
+            Just('path: src')
+        )
+        self.assertEqual(
+            Nothing().a_apply(Just(get('src'))),
+            Nothing()
+        )
+        self.assertEqual(
+            Maybe(img_tag1).a_apply(MaybeMorphism()),
+            Nothing()
+        )
+        self.assertEqual(
+            Nothing().a_apply(MaybeMorphism()),
+            Nothing()
+        )
+
+    def test_m_apply(self):
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('src')),
+            Just('path: src')
+        )
+        self.assertEqual(
+            Nothing().m_apply(maybe_get('src')),
+            Nothing()
+        )
+
+    def test_m_apply_chaining(self):
+        repeat = lambda x: x+x
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('src')).m_apply(repeat),
+            Just('path: srcpath: src')
+        )
+        self.assertEqual(
+            Maybe(img_tag1).m_apply(maybe_get('data-src')).m_apply(repeat),
+            Nothing()
         )
 
     def test_join(self):
@@ -501,32 +472,6 @@ class MaybeTests(unittest.TestCase):
         self.assertEqual(Maybe().join(), Nothing())
         self.assertEqual(Just(Just('xx')).join(), Just('xx'))
         self.assertEqual(Just(Nothing()).join(), Nothing())
-        
-        # Handling of default
-        self.assertEqual(
-            Just(Just('a', default='b')).join(),
-            Just('a', default='b')
-        )
-
-        # Edge case that I don't know what it should be
-        self.assertEqual(Just(Nothing(), default=12).join(), Just(12))
-        self.assertEqual(Just(Nothing(), default=Just('xx')).join(), Just('xx'))
-
-
-    # def test_a_apply(self):
-    #     result = Maybe(img_tag).a_apply(get('src')).a_apply('data_src')
-
-    # def test_a_apply_empty(self):
-    #     just_elm = Just('xx')
-    #     nothing_elm = Just()
-    #     just_morph = Just(lambda _str: _str+_str)
-    #     nothing_morph = Just()
-
-    def test_m_apply(self):
-        just_elm = Maybe(img_tag1)
-        constructor1 = getter_bind('src')
-        constructor2 = getter_bind('data-src')
-
 
 
 if __name__ == "__main__":
