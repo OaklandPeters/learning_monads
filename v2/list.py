@@ -1,7 +1,7 @@
 import typing
 
 import category
-from category import classproperty
+from support_pre import classproperty
 
 class ListCategory(category.Category):
     """
@@ -178,10 +178,13 @@ class ListMorphism(category.Morphism, List):
         else:
             return super(ListMorphism, self).__call__(*args)
 
+
 #=============
 # Unit-tests
 #==============
 import unittest
+
+import support_post
 
 class TestList(unittest.TestCase):
     def test_zero(self):
@@ -292,7 +295,7 @@ class TestList(unittest.TestCase):
             lambda : list_nested.f_apply(add2)
         )
         self.assertEqual(
-            list_nested.f_apply(category.apply_recursively(add2)),
+            list_nested.f_apply(support_post.apply_recursively(add2)),
             ListElement(3, 4, ListElement(5, 6))
         )
     

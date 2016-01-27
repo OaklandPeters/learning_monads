@@ -7,15 +7,7 @@ Todo:
 import typing
 from abc import abstractmethod, abstractproperty
 
-
-class classproperty(object):
-
-    def __init__(self, fget):
-        self.fget = fget
-
-    def __get__(self, owner_self, owner_cls):
-        return self.fget(owner_cls)
-
+from support_pre import classproperty
 
 class Category(type):
     """
@@ -193,33 +185,3 @@ class Monad(Monoid):
     @classmethod
     def m_map(cls, constructor):
         return self.Category.m_map(constructor)
-
-
-def apply_recursively(function, guard=Element):
-    """
-    Helper function, to handle recursing down nested monadic structures,
-    (such as list of lists).
-
-    Intended to work with f_apply. Example:
-    > list_nested.f_apply(recurse(add2))
-    > list_nested = ListElement(1, 2, ListElement(3, 4))
-    > add2 = lambda num: num+2
-    ListElement(3, 4, ListElement(5, 6))
-    """
-    def wrapper(obj):
-        if isinstance(obj, guard):
-            return obj.f_apply(wrapper)
-        else:
-            return function(obj)
-    return wrapper
-
-
-def check_validation(cls, *args, **kwargs) -> None:
-    """Checks all validation functions defined on
-    classes in MRO of 'cls'.
-    These functions should be classmethods which raise TypeError or return None.
-    """
-    for klass in cls.__mro__:
-        # does 'klass' define it's own '_validation' method
-        if '_validation' in klass.__dict__:
-            klass._validation(*args, **kwargs)
