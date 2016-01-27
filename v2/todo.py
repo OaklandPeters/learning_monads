@@ -1,5 +1,6 @@
 """
 Next-steps:
+
 * IMPORTANT REWORK: Morphism IS a Monoid, but defined in terms of different functions on the category: zero --> identity, append --> compose, join --> collapse
 ** Apply to list.py
 * Add __instancecheck__ and __subclasscheck__ to category.Category, and make ListCategory used as a metaclass. (lookup how to do this from mfpy). Hard part - do it while allowing normal 'isinstance' to work when not overridden. 
@@ -13,7 +14,10 @@ Next-steps:
 
 
 Later steps:
-* Add Category method: identity, and have Morphism.zero return it
+* HARD BUT ELEGANT: make typecheck work for zero and identity (the identity one may be tricky). This requires creating an object for Zero, and providing special behavior for Identity.
+** Make Category.Zero/Category.Identity --> classproperty returning a subclass of this object. Requires caching
+** Change typechecking in list.py and maybe.py, for empty Element/Morphism to isinstance(value, cls.Category.Zero)
+** Write class objects ~ generics: class Identity(Generic[Category | Morphism]), class Zero(Generic[Category | Element | Monoid])
 * Add in list functions to List() monad (maybe even inherit from standard Python list)
 * Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor. Requires some notion of how I want functor/applicative to be used.
 * Make category.Category abstract, and define what functions it can, in terms of one another.
