@@ -1,32 +1,32 @@
 """
 Next-steps:
-
-* IMPORTANT REWORK: Morphism IS a Monoid, but defined in terms of different functions on the category: zero --> identity, append --> compose, join --> collapse
-** Apply to list.py
-* Add __instancecheck__ and __subclasscheck__ to category.Category, and make ListCategory used as a metaclass. (lookup how to do this from mfpy). Hard part - do it while allowing normal 'isinstance' to work when not overridden. 
-* Just/Nothing should override __instancecheck__ and __subclasscheck__
-* Rework so that functions that can be defined in terms of one another ARE
-** category.Category.f_map <-- f_apply
-** category.Category.a_map <-- a_apply
-** category.Category.m_map <-- m_apply
-** m_apply in terms of f_apply and join
 * Simplify List.compose/Maybe.compose - to account for removing the identity function when appending ot it
+* __init__ functions for v2
+* test/ test/__init__
+* Move all to their own directory.
+* Some mechanism to run all unit-tests. Either nose or py.test, or write something in tests/all_tests.py which imports * from test_list.py, test_maybe.py and runs unittest.main()
 
 
 Later steps:
+* Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor. Requires some notion of how I want functor/applicative to be used.
+* Make category.Category abstract, and define what functions it can, in terms of one another.
+* Make Functor/Applicative/Monad abstract. abstract-->X_apply function. Mixin method-->X_map. abstract-->Category
+* DECISION: should Category have access to Element and Morphism properties. If so, Functor/Applicative/Monad/Element/Morphism should have access to them via cls.Category.Element, cls.Category.Morphism. Creates a PROBLEM due to cyclic reference on Category (which must be defined before it's Element/Morphism, but should have a reference to them)
+* Write unit-tests generic to Category, to reflect laws. As a mixin. Write after refactoring category into Functor/Applicative/Monad.
+* AS A TEST: Refactor 
 * HARD BUT ELEGANT: make typecheck work for zero and identity (the identity one may be tricky). This requires creating an object for Zero, and providing special behavior for Identity.
 ** Make Category.Zero/Category.Identity --> classproperty returning a subclass of this object. Requires caching
 ** Change typechecking in list.py and maybe.py, for empty Element/Morphism to isinstance(value, cls.Category.Zero)
 ** Write class objects ~ generics: class Identity(Generic[Category | Morphism]), class Zero(Generic[Category | Element | Monoid])
 * Add in list functions to List() monad (maybe even inherit from standard Python list)
-* Refactor methods on Element/Morphism to refer to Functor/Applicative/Monad. Do this by placing references in the category: List.functor = ListFunctor. Requires some notion of how I want functor/applicative to be used.
-* Make category.Category abstract, and define what functions it can, in terms of one another.
 * Rework category.py to be abstract classes (Monad, etc).
 * new class: 'WellBehavedMonad', which provides implementation of a number of conveniences, including the dispatching __new__, __repr__ based on .data, .iter, 
 * Add '@functools.wraps()' statements to 'map' functions in list.py and maybe.py. Consider changing the naming process.
+* SERIOUS THOUGHT: on clearly specifying class/validatory for ElementType and MorphismType.
 
 
 Much-later steps:
+* Generalize methods in category.py to take **kwargs (maybe also *args) where possible. Why? because some specific monads will make use of extra arguments. For example, some Monads will support a .join() that takes an argument (think of Maybe-like structures which have to choose between left and right).
 * Add sugar-classes to category.py, for '>>' at least.
 * Unit-test mixin for monoid, based on the laws here: https://hackage.haskell.org/package/base-4.8.2.0/docs/Data-Monoid.html
 * Incorporate Foldable and Traversable into the Pythonic hierarchy
@@ -37,6 +37,9 @@ Much-later steps:
 ** Alternately... just accept that it's not true in general, although it's useful.
 * Find monadic laws, and write MixinTests for them. Documentation for each test should include statement of the law. These should be used by mixing them onto the TestCase for speicifc monads. Test on ListMonadTests
 
+Much-much-later steps:
+* Consider a better reorganization of the distinction between Category and Monad. There are a few subtle factors taht produce confusion here: (1) f_apply/a_apply are associated with the Monad, and *possibly* the category specific to the monad, (2) I can see how there can be multiple Monads inside a single category (such as the relationship between Arguments and State).
+** Is subclass inheritance a SOLUTION? class StateCategory(ArgumentsCategory), class StateElement(ArgumentsMorphism), class StateMorphism()
 
 
 Interestingly, List.join and Maybe.join have the same join function.
