@@ -21,3 +21,7 @@ def check_validation(cls, *args, **kwargs) -> None:
         # does 'klass' define it's own '_validation' method
         if '_validation' in klass.__dict__:
             klass._validation(*args, **kwargs)
+
+
+class NotPassed:
+    pass
