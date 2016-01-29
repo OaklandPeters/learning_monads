@@ -5,6 +5,7 @@ Next-steps:
 * test/ test/__init__
 * Move all to their own directory.
 * Some mechanism to run all unit-tests. Either nose or py.test, or write something in tests/all_tests.py which imports * from test_list.py, test_maybe.py and runs unittest.main()
+* TRY: see if I can move monadic functions off of Category, and onto Monad
 
 
 Later steps:
@@ -27,7 +28,10 @@ Later steps:
 
 Much-later steps:
 * Generalize methods in category.py to take **kwargs (maybe also *args) where possible. Why? because some specific monads will make use of extra arguments. For example, some Monads will support a .join() that takes an argument (think of Maybe-like structures which have to choose between left and right).
-* Add sugar-classes to category.py, for '>>' at least.
+* SUGAR: add sugar-classes to category.py, for '>>' at least. via MonadOperatorsSugarMixin
+* SUGAR: generic functions for: lift, f_map, a_map, m_map. Maybe: GenericFunctionMixin
+* SUGAR: generic object + typechecker + function for: Identity, Zero. Needs to be able to ask: isinstance(element, Zero(Category)). May require writing a Zero and Identity object for each Category. Should work like: Zero(Category) or Zero(Element) or Zero(Morphism).
+* ADVANCED SUGAR: |infix| methods via a InfixSugarMixin
 * Unit-test mixin for monoid, based on the laws here: https://hackage.haskell.org/package/base-4.8.2.0/docs/Data-Monoid.html
 * Incorporate Foldable and Traversable into the Pythonic hierarchy
 * Try to Rework to try to simplify the hierarchy, to merge ListCategory and List
