@@ -48,6 +48,15 @@ Injector = typing.Callable[Value, Tuple]
 InjectorBinder = Callable[State, Injector]
 
 
+class NotSpecifiedType:
+    """If 'None' were subclassable, this would be a subclass of NoneType.
+    This is used as initial value for StateElement.lift's 'value' - because
+    we want to be able to distinguish that initial value from the possibility
+    of the user explicitly passing in 'None'
+    """
+NotSpecified = NotSpecifiedType()
+
+
 
 class StateCategory(category.Category):
     """
@@ -58,6 +67,10 @@ class StateCategory(category.Category):
     to combine the state and some value, usually
         def _injector(value):
             return (self.state, value)
+
+    Converting this from existing examples (pymonad):
+        They have it wrap functions, and have no concept of morphisms
+        I'm having it wrap data, and have a concept of morphisms
     """
 
     @classmethod
@@ -72,7 +85,6 @@ class StateCategory(category.Category):
         the state is, whether a dict, sequence, or something atomic.
         
         """
-
 
 
 
@@ -97,11 +109,27 @@ class State(category.Monad, metaclass=StateCategory):
     
     def _injector(self, value: Value) -> Tuple[StateType, Value]:
 
-class StateMorphism(category.Morphism, State):
-    pass
+
+
 
 class StateElement(category.Element, State):
+    """
+    Element should carry the result of the calculation (potentially something representing 'nothing'),
+    and the state.
+
+    Complication: this should support the ability to 'lift' and only provide state.
+    """
+    def __init__(self, state, value=NotSpecified):
+        self.state = state
+        self.value = value
+
+
+class StateMorphism(category.Morphism, State):
+    """
+    Computation, acting on state and some value.
+    """
     pass
+
 
 
 
@@ -131,3 +159,14 @@ def read(key):                       # a computation in an environment, that rea
     def _(env):                      # return a function of environment
         return env[key]              # which, when invoked with an environment, will look up the key in the env
     return _
+
+
+
+#===================
+# Unit-Tests
+#===================
+import unittest
+
+class StateTests(unittest.TestCase):
+    def test_basic(self):
+        
