@@ -102,6 +102,23 @@ class ListCategory(category.Category):
         return accumulator
 
 
+class ListFunctor(category.Functor, metaclass=ListCategory):
+    def __init__(self, *values):
+        self.data = values
+
+lf = ListFunctor('xx')
+
+print()
+print("lf:", type(lf), lf)
+print()
+import ipdb
+ipdb.set_trace()
+print()
+
+
+
+
+
 class List(category.Monad, metaclass=ListCategory):
     """
     Used for type-checking, pattern recognition, and it's constructor
@@ -290,12 +307,14 @@ class TestList(unittest.TestCase):
 
     def test_nested(self):
         list_nested = ListElement(1, 2, ListElement(3, 4))
-        add2 = lambda num: num+2
+        def add2(_num):
+            return _num + 2
+            
         self.assertRaises(TypeError,
             lambda : list_nested.f_apply(add2)
         )
         self.assertEqual(
-            list_nested.f_apply(support_post.apply_recursively(add2)),
+            list_nested.f_apply(support_post.apply_recursively(add2, guard=ListElement)),
             ListElement(3, 4, ListElement(5, 6))
         )
     

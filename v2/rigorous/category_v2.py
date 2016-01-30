@@ -9,8 +9,6 @@ from abc import abstractmethod, abstractproperty
 
 from support_pre import classproperty
 
-CategoryType = typing.TypeVar('Category')
-
 class Category(type):
     """
     Acts as both a metaclass, and as the authoritative location of all
@@ -34,32 +32,34 @@ class Category(type):
         else:
             return type.__subclasscheck__(cls, subclass)
 
+    @abstractproperty
+    @classproperty
+    def Morphism(cls) -> 'Morphism':
+        return NotImplemented
 
-class CategoryBase:
+    @abstractproperty
+    @classproperty
+    def Element(cls) -> 'Element':
+        return NotImplemented
+
+    @classmethod
+    def in_category(cls, category):
+        return issubclass(cls.Category, category)
+
+
+class Categorized:
     """
-    Abstract-class for objects in a category-theoretic context. Allows
-    various entities within a single category to refer to one another.
+    Represents a type which resides in a Category.
+    This allows functions on the class to access the relevant
+    categorical or monadic functions.
     """
     @abstractproperty
     @classproperty
-    def Category(self) -> Category:
+    def Category(cls) -> 'Category':
         return NotImplemented
 
-    @abstractproperty
-    @classproperty
-    def Morphism(self) -> 'Morphism':
-        return NotImplemented
 
-    @abstractproperty
-    @classproperty
-    def Element(self) -> 'Element':
-        return NotImplemented
-
-    def in_category(self, category):
-        return issubclass(self.Category, category)
-
-
-class Monoid(CategoryBase):
+class Monoid(Categorized):
     @classmethod
     def zero(cls):
         return cls.Category.zero()
@@ -84,6 +84,11 @@ class Element(Monoid):
     And also, we want to be able to pattern match/distinguish functions
     from objects/elements.
     """
+    @abstractproperty
+    @classproperty
+    def Category(cls) -> 'Category':
+        return NotImplemented
+
     @classmethod
     def lift(cls, *values):
         return cls.Element(*values)
@@ -120,6 +125,10 @@ class Morphism(Monoid):
 
     This has monoidal structure via Identity, Compose, and Collapse. Zero/Append/Join are just proxies to these functions.
     """
+    @abstractproperty
+    @classproperty
+    def Category(cls) -> 'Category':
+        return NotImplemented
 
     def a_map(self):
         return self.Category.a_map(self)
@@ -171,6 +180,25 @@ class Morphism(Monoid):
             raise TypeError("All arguments to Morphism must be callable.")
         return data
 
+
+class Functor(Categorized):
+    Domain
+    Codomain
+
+    @classmethod
+    def f_apply(cls, element: Domain.Element, function: Domain.Morphism):
+
+
+    @classmethod
+    def f_map(cls, function):
+        return cls.Category.f_map(function)
+
+class ListFunctor(Functor):
+    Domain = Python  # input
+    Codomain = ListCategory  # output
+
+    @classmethod
+    def f_apply(cls, element: Codomain.Element, function: )
 
 class Monad(Monoid):
     """

@@ -1,11 +1,16 @@
 """
+Structure refactor:
+* TRY: see if I can move monadic functions off of Category, and onto Monad
+* PROBLEM: Find a way to Element/Morphism only have access to the methods appropriate for whether it's in a Functor/Applicative/Monad.
+
 Next-steps:
+* Fix: a_map, m_map should return Morphism
 * Simplify List.compose/Maybe.compose - to account for removing the identity function when appending ot it
 * __init__ functions for v2
 * test/ test/__init__
 * Move all to their own directory.
 * Some mechanism to run all unit-tests. Either nose or py.test, or write something in tests/all_tests.py which imports * from test_list.py, test_maybe.py and runs unittest.main()
-* TRY: see if I can move monadic functions off of Category, and onto Monad
+
 
 
 Later steps:
