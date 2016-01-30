@@ -1,9 +1,12 @@
 """
 Structure refactor:
-* TRY: see if I can move monadic functions off of Category, and onto Monad
+* LONG TERM: I'd like to allow for the possibility of Functor/Applicative that return Element/Morphism in a Category that is not the Monad category. DISTINGUISHING FEATURE - Applicative does not change. Monad does.
+* This needs domain/codomain to potentially be specified on the category, AND THEN Monad to define it's own category. This may get laborious.
+* 
 * PROBLEM: Find a way to Element/Morphism only have access to the methods appropriate for whether it's in a Functor/Applicative/Monad.
 
 Next-steps:
+* category.py: Functor, Applicative. For now, ignore that these may need
 * Fix: a_map, m_map should return Morphism
 * Simplify List.compose/Maybe.compose - to account for removing the identity function when appending ot it
 * __init__ functions for v2
