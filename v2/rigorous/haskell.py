@@ -481,6 +481,30 @@ class Traversable(Functor, Foldable):
         ,[0,1,1,2],[0,1,1,3],[0,1,2,0],[0,1,2,1],[0,1,2,2],[0,1,2,3]
         ]
         The inner lists retain the structure the original list − all of them have four elements. The outer list is the new layer, corresponding to the introduction of nondeterminism through allowing each element to vary from zero to its (original) value.
+
+
+        ---------
+        https://en.wikibooks.org/wiki/Haskell/Traversable
+
+        instance Traversable [] where
+            -- sequenceA :: Applicative f => [f a] -> f [a]
+            sequenceA []     = pure []
+            sequenceA (u:us) = (:) <$> u <*> sequenceA us
+
+        -- Or, equivalently:
+        instance Traversable [] where
+            sequenceA us = foldr (\u v -> (:) <$> u <*> v) (pure []) us
+
+        Traversable is to Applicative contexts what Foldable is to Monoid values. From that point of view, sequenceA is analogous to fold − it creates an applicative summary of the contexts within a structure, and then rebuilds the structure in the new context. sequenceA is the function we were looking for:
+
+
+        --------
+        Self note: an implementation of traverse for list might look like:
+
+        class TraversableList(ListMonad, Traversable):
+            @classmethod
+            def traverse(cls, element, function):
+                
         """
 
     @classmethod
