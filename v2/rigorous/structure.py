@@ -54,8 +54,14 @@ class Traversable(Foldable, Functor):
 class MonadFix(Monad):
     pass
 
+class Comonoid:
+    pass
 
-class GentleMonad(MonadPlus, MonadFix, Traversable):
+class Comonad(Comonoid):
+    pass
+
+
+class GentleMonad(MonadPlus, MonadFix, Traversable, Comonad):
     pass
 
 
