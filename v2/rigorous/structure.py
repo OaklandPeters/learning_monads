@@ -11,7 +11,58 @@ But, in my intuition, each Monad defines a Category itself.
 
 
 
+
 """
+
+class Functor:
+    pass
+
+class Alt(Functor):
+    pass
+
+class Plus(Alt):
+    pass
+
+class Apply(Functor):
+    pass
+
+class Applicative(Apply):
+    pass
+
+class Alternative(Applicative, Plus):
+    pass
+
+class Bind(Apply):
+    pass
+
+class Monad(Bind):
+    pass
+
+class MonadPlus(Monad, Alternative):
+    pass
+
+
+#
+#  Extra bullshit I'd like to see
+#  
+class Foldable:
+    pass
+
+class Traversable(Foldable, Functor):
+    pass
+
+class MonadFix(Monad):
+    pass
+
+
+class GentleMonad(MonadPlus, MonadFix, Traversable):
+    pass
+
+
+
+
+
+
 
 
 class Functor:

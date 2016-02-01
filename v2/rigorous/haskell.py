@@ -461,7 +461,6 @@ class Traversable(Functor, Foldable):
 
 
     NOTE: Traversable can be defined from 'traverse' OR from 'SequenceA'
-
     """
 
     @classmethod
@@ -499,12 +498,61 @@ class Traversable(Functor, Foldable):
 
 
         --------
+        If sequenceA is analogous to fold, traverse is analogous to foldMap. They can be defined in terms of each other, and therefore a minimal implementation of Traversable just needs to supply one of them:
+
+        traverse f = sequenceA . fmap f
+        sequenceA = traverse id
+
+        Rewriting the list instance using traverse makes the parallels with Functor and Foldable obvious:
+
+        instance Traversable [] where
+            traverse _ []     = pure []
+            traverse f (x:xs) = (:) <$> f x <*> traverse f xs
+
+        -- Or, equivalently:
+        instance Traversable [] where
+            traverse f xs = foldr (\x v -> (:) <$> f x <*> v) (pure []) xs
+
+        --------
         Self note: an implementation of traverse for list might look like:
+
+        <$> : fapply         <*> : aapply/amap
 
         class TraversableList(ListMonad, Traversable):
             @classmethod
-            def traverse(cls, element, function):
-                
+            def traverse(cls, element, constructor):
+                # element:: m a
+                # constructor::a -> m a
+                # translating this:  traverse f (x:xs) = (:)  <$>    f x  <*>    traverse f xs
+                #                                     append  fapply f x  aapply traverse f xs
+
+                (:)  <$>    f x  <*>    traverse f xs
+                (:) <$> m(first) <*> m(rest:recursion)
+                # Oh, I get it...   (:) <$> m(first)  --> returns a partial function, this basically feeds it a first argument
+                f_apply(m(first), (:))  # --> a bunch of partially completed append operations
+
+                if isinstance(element, Nothing):
+                    return cls.zero()
+                else:
+                    # Writing this in recursive format
+                    # ... translate this to looping later
+                    first = constructor(element[0])
+                    return cls.a_apply(
+                        cls.traverse(
+                            element[1:],
+                            constructor
+                        ),
+                        constructor(element[0]).f_apply(
+                            lambda value: List(value).append
+                        )
+                    )
+
+                    
+                    
+
+            @classmethod
+            def sequenceA(cls, thing):
+                # This seems to combine the information of the element and function
         """
 
     @classmethod
