@@ -54,6 +54,7 @@ Much-later steps:
 import typing
 
 import category
+import support_pre
 from category import classproperty
 
 __all__ = [
@@ -162,7 +163,7 @@ class Maybe(category.Monad, metaclass=MaybeCategory):
         """All subclasses presently use this one initialization function.
         Input validation can be added by defining a '_validation' classmethod
         """
-        category.check_validation(type(self), *data)
+        support_pre.check_validation(type(self), *data)
         self.data = data
 
     @classproperty
@@ -203,7 +204,7 @@ class MaybeElement(category.Element, Maybe):
 
     """
     def __new__(cls, *data):
-        category.check_validation(cls, *data)
+        support_pre.check_validation(cls, *data)
         return object.__new__(MaybeElement)
 
 
@@ -212,7 +213,7 @@ class MaybeMorphism(category.Morphism, Maybe):
     #Delegates to JustElement/NothingElement
     """
     def __new__(cls, *data):
-        category.check_validation(cls, *data)
+        support_pre.check_validation(cls, *data)
         return object.__new__(MaybeMorphism)
 
 
@@ -257,6 +258,40 @@ class Nothing(Maybe):
             if len(instance.data) == 0:
                 return True
         return False
+
+
+
+# Utility function
+def f_m2b(element, predicate):
+    """Functor from Maybe-->Bool-->Maybe.
+    Used to check validity without changing content
+    result = (
+        Maybe(value)
+        >> f_m2b(lambda value: hasattr(value, 'tag'))
+        >> f_m2b(_.tag == 'hr')
+        >> lambda child: child.getparent().remove(child)
+    )
+        Nothing() --> Nothing
+        Just(x) --> if bool(f(x))==True --> Just(x)
+                       bool(f(x))==False --> Nothing()
+
+    @TODO: Rewrite this
+    """
+    result = element.f_apply(predicate)
+    # Object returned might have __bool__, but not itself == True|False
+    truthy = result.f_apply(bool)
+    if isinstance(truthy, Nothing):
+        return Nothing()
+    elif truthy == Just(True):
+        return element
+    elif result == Just(False):
+        return Nothing()
+    else:
+        raise RuntimeError("Bool predicate did not return True or False. Should be impossible.")
+
+only_if_true = lambda elm: elm if elm == Just(True) else Nothing()
+continue_if = lambda predicate: lambda elm: elm.f_apply(predicate).f_apply(only_if_true)
+
 
 
 

@@ -11,8 +11,14 @@ But, in my intuition, each Monad defines a Category itself.
 
 
 
-
+@todo: Add abstract methods to Functor-->Monad stack
 """
+
+
+#
+#   Functor --> Monad stack
+#       Honestly, this stack seems much too complicated
+#
 
 class Functor:
     pass
@@ -41,6 +47,12 @@ class Monad(Bind):
 class MonadPlus(Monad, Alternative):
     pass
 
+
+class SemiGroup:
+    pass
+
+class Monoid(SemiGroup):
+    pass
 
 #
 #  Extra bullshit I'd like to see
