@@ -6,6 +6,7 @@ Structure refactor:
 * PROBLEM: Find a way to Element/Morphism only have access to the methods appropriate for whether it's in a Functor/Applicative/Monad.
 
 Next-steps:
+* Change abstractclassproperty to raise an exception when property is accessed
 * category.py: Functor, Applicative. For now, ignore that these may need
 * Fix: a_map, m_map should return Morphism
 * Simplify List.compose/Maybe.compose - to account for removing the identity function when appending ot it

@@ -9,11 +9,12 @@ from abc import abstractmethod, abstractproperty
 
 from support_pre import classproperty
 
+
 class Category(type):
     """
     Acts as both a metaclass, and as the authoritative location of all
     monadic methods for a monad-category.
-    
+
     @todo: Make this an abstract
     @todo: Add *all* of the methods on this
     ... not everything on this should be abstract, if we want you to be able
@@ -68,7 +69,6 @@ class Monoid(CategoryBase):
 
     def join(self):
         return self.Category.join(self)
-
 
 
 class Element(Monoid):

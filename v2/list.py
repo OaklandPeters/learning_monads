@@ -3,9 +3,9 @@ import typing
 import category
 from support_pre import classproperty
 
+
 class ListCategory(category.Category):
-    """
-    """
+
     @classmethod
     def f_apply(cls, element, function):
         accumulator = element.zero()
