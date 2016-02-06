@@ -129,7 +129,7 @@ class Functor(typing.Generic[Codomain, Domain]):
 
     @abstractmethod
     @classmethod
-    def f_lift(cls, function: 'cls.Codomain.Morphism') -> 'cls.:
+    def f_lift(cls, function: 'cls.Codomain.Morphism') -> 'cls.':
         """Translate a function
         """
 
