@@ -53,6 +53,17 @@ Alternately, I can NOT explicitly define lifting functions, and just rely on the
 
 (2) Getting data OUT of the Monad. How? m_map and m_apply (and likely composition and monoid operators in the Monad category) continue to return objects in the monad, so there is the concern of how to map from the Monad.Category to the Codomain. Solution: f_apply and a_apply both STILL map into the codomain.
 
+WAIT... NO. f_apply and a_apply map *from* the Domain, so it's not at all clear that they should be usable on the Monad.Category. What we need are one or more of:
+
+* collapse behavior
+* f_map for Monad.Category : something that allows you to apply a transform on each element in the monad
+* foldable : implied by __iter__ I think. Related to reducable
+* traversable : this thing is the ability to apply an arbitary Applicative over it.
+
+See 'three-category-problem.md' for discussion on avenues of this.
+        
+
+
 (3) Non-chainability of .a_apply and .f_apply. These both map Domain -> Codomain, so they cannot placed end to end.
 
 ! Happy insight: because of problem (3) (non-chainability of f_apply and a_apply), it takes the Monad class to give chaining behavior. *Which is what we know should be required mathematically.*
