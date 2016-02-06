@@ -13,9 +13,15 @@ from support_pre import classproperty, abstractclassproperty, TypeCheckableMeta,
 
 class Morphism:
     """
+    Essentially, functions which map elements within a category.
+
     Classes inheriting from this should use a metaclass that is a child of Category.
     In Haskell, the Identity and compose are located on Category.
     For sensibility, we locate it here on Morphism.
+
+    Laws:
+        Identity
+        Composition
     """
     @abstractclassproperty
     def Category(cls):
@@ -48,6 +54,7 @@ class Morphism:
 
 class Identity(Morphism):
     pass
+
 
 class Element:
     """
@@ -99,7 +106,7 @@ class Category(TypeCheckableMeta):
         return NotImplemented
 
 
-class Functor:
+class Functor(typing.Generic[Codomain, Domain]):
     """Maps functions from the Domain to the Codomain. Note, this Functor class cannot actually map elements (that requires Applicative).
 
     Functor is not instanced.
@@ -119,6 +126,12 @@ class Functor:
     def Codomain(cls) -> Category:
         """Output type."""
         pass
+
+    @abstractmethod
+    @classmethod
+    def f_lift(cls, function: 'cls.Codomain.Morphism') -> 'cls.:
+        """Translate a function
+        """
 
     @abstractmethod
     @pedanticmethod
@@ -166,7 +179,53 @@ class Monad(Applicative, Category):
     NOT SURE IF: I'll have this involve Monoid for the elements or not.
 
     NOTE: A Monad itself is a Category. So, there are (potentially) three Categories related to a Monad. In practice, usually two of these domains are the same. For example, for Monads that are meant to be used as data-structures, such as List, the Codomain is usually the 
+
+
+    REALIZATION OF PROBLEM:
+        There is a schism in meaning between the methods on Applicative and Monad.
+        If Applicative.a_apply return the Codomain
+        And you build a Monad on top of that Applicative
+        The Monad.a_apply should return the Codomain, but it feels like it should return the monadic domain.
+
+        So there is a big problem:
+            Building up Functor -> Applicative -> Monad incrementally.
     """
+    @abstractmethod
+    def f_map(cls, function: 'cls.Domain.Function') -> 'cls.Morphism':
+        return NotImplemented
+
+    @abstractmethod
+    def f_apply(cls, element: 'cls.Element', function: 'cls.Domain.Morphism') -> 'cls.Element':
+        return NotImplemented
+
+    @abstractmethod
+    def a_map(cls, function: 'cls.Morphism'):
+        return NotImplemented
+
+
+class MonadElement(Morphism):
+    """
+    Morphisms and Elements in the category of a Monad also express the monadic methods
+    """
+    @abstractclassproperty
+    def Category(cls) -> 'Monad':
+        return NotImplemented
+
+    @
+
+
+class MonadMorphism(Morphism):
+    """
+    Morphisms and Elements in the category of a Monad also express the monadic methods
+    """
+    @abstractclassproperty
+    def Category(cls) -> 'Monad':
+        return NotImplemented
+
+
+
+
+
 
 
 
