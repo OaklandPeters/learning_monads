@@ -1,6 +1,9 @@
 """
 @todo: See if pedanticmethod can be composed with abstractmethod
 
+Next-steps:
+* Bring in HigherKindedTypeVar, so Domain.Morphism is sensible
+
 CHANGE IT: see if I can prevent Category from being a metaclass. Reason: I would like Monad to be a child of Category
 
 """
@@ -127,11 +130,11 @@ class Functor(typing.Generic[Codomain, Domain]):
         """Output type."""
         pass
 
+
     @abstractmethod
     @classmethod
-    def f_lift(cls, function: 'cls.Codomain.Morphism') -> 'cls.':
-        """Translate a function
-        """
+    def f_lift(cls, function: 'cls.Codomain.Morphism') -> Codomain.Element:
+        """Translate a function."""
 
     @abstractmethod
     @pedanticmethod
@@ -157,7 +160,6 @@ class Functor(typing.Generic[Codomain, Domain]):
 class Applicative(Functor):
     """
     NOTE: to 'lift' an element, use 'lift'
-
     Applicative itself is not instanced.
     """
     @abstractmethod
