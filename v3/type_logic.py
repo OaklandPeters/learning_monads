@@ -3,23 +3,26 @@ Drafting TypeLogic, without reference to category.
 In order to get the 3-category construction correct
 
 
-BIG MISTAKE:
-    bind : I have it *NOT* returning inside the monad
-
-POSSIBLE FIX:
-    rename current bind --> collapse, and give it the operator <<
-    With the principle that it is usually the final statement on a monad chain
-
-
-
 Next-steps:
+* Rename: bind --> collapse
+
 * Make this inherit from typecheckablemeta, and override __instancecheck__, __subclasscheck__ for TypeLogicElement
 * Fixup operators:   compose: 
 * Consider rule: operators are overloaded on both Element and Morphism, and involve lifting or fmaping the RHS
     * >> : pipe  Morphism >> Morphism -> Compose, Element >> Morphism -> Apply
     * '**': call Morphism ** values -> __call__, 
 
+Rewrite plan:
+* Write CallTree (~FunctionMonad with only positional arguments) generalization
+* Traversable: .traverse(cls, obj: CallTreeObject, functor: Applicative), , then Traversable interface stub
 
+
+Call Tree  (~FunctionMonad)
+Sugar for LogicalInterface
+Traversable via Bisection on Isinstance/IsSubclass  (new Applicative Functors)
+
+Functor Bisection Rule ==> Monad is Traversable by the original Applicative Functor.
+Might be rephrasable as we can always lift F_D,C to F_M,C
 
 """
 import typing
@@ -60,31 +63,36 @@ class TypeLogic(category.Category):
 
     @classmethod
     def f_apply(cls, function, *elements: 'Tuple[cls.Category.Element]') -> 'cls.Category.Morphism':
-        return TypeLogicMorphism(
-            function,
-            *elements
-        )
+        return TypeLogicMorphism(function, *elements)
 
     @classmethod
     def f_map(cls, function):
         """This format may not be valid."""
-        #@functools.wraps(function)
-        #def wrapper(*elements):
-        #    return cls.f_apply(function, *elements)
-        #return TypeLogicMorphism(wrapper)
         return TypeLogicMorphism(function)
 
-
     @classmethod
-    def bind(cls, obj: 'TypeLogicObject', translator: Translator) -> bool:
+    def collapse(cls, obj: 'TypeLogicObject', translator: Translator) -> 'cls.Codomain.Element':
         """
-        This is actually an abuse of bind.
-        Because it does not return inside the monad
+        Use translator function (a functor?) to translate the monad structure into the Codomain.
+        I suspect this is 'traverse'
+        To turn functor: F_DC (domain->codomain) into F_MC (monad->codomain),
+            this uses the following rule:
+        def functor_lift(applicative: Applicative:
+            def lifted(obj: TypeLogicObject) -> CodomainObject:
+                if isinstance(obj, TypeLogicElement):
+                    # Is this f_map?
+                    return 
+                    obj.function
+                isinstance(obj, TypeLogicMorphism):
+                    # Is this a_apply?
+                    # Map over interior
+                    return obj.function()
+
         """
         type_check(obj, *(TypeLogicElement, TypeLogicMorphism))
         if isinstance(obj, TypeLogicMorphism):
             return obj.function(
-                *(element.bind(translator)
+                *(element.collapse(translator)
                   for element in obj.elements)
             )
         elif isinstance(obj, TypeLogicElement):
@@ -92,7 +100,7 @@ class TypeLogic(category.Category):
         else:
             raise TypeError("This should never happen.")
 
-        #obj.function(*(element.bind(translator) for element in obj.elements))
+        #obj.function(*(element.collapse(translator) for element in obj.elements))
 
 
     #
@@ -154,7 +162,7 @@ class TypeLogicSugar:
         return self.Category.f_apply(Not, self.Category.a_lift(self))
 
     def __rshift__(self, translator: Translator):
-        return self.bind(translator)
+        return self.collapse(translator)
 
 
 #===================
@@ -176,8 +184,8 @@ class TypeLogicMorphism(TypeLogicSugar):
     def f_apply(self, *elements):
         return self.Category.f_apply(self, *elements)
 
-    def bind(self, translator: Translator) -> bool:
-        return self.Category.bind(self, translator)
+    def collapse(self, translator: Translator) -> bool:
+        return self.Category.collapse(self, translator)
 
     @classproperty
     def Category(cls):
@@ -207,8 +215,8 @@ class TypeLogicElement(TypeLogicSugar):
     def __str__(self):
         return "<{0}>".format(self.value)
 
-    def bind(self, translator: Translator) -> bool:
-        return self.Category.bind(self, translator)
+    def collapse(self, translator: Translator) -> bool:
+        return self.Category.collapse(self, translator)
         #return translator(self.value)
 
     @classproperty
@@ -248,7 +256,7 @@ class TypeLogicTests(unittest.TestCase):
         """Lifting a single class. No composition."""
         def confirm(value, klass, expected):
             self.assertEqual(
-                TL.a_lift(klass).bind(isinst(value)),
+                TL.a_lift(klass).collapse(isinst(value)),
                 expected
             )
         confirm("", str, True)
@@ -301,17 +309,22 @@ class TypeLogicTests(unittest.TestCase):
         )
 
         for _input, result in expected:
-            self.assertEqual(checkit.bind(isinst(_input)), result)
+            self.assertEqual(checkit.collapse(isinst(_input)), result)
 
-    def test_f_map(self):
-        """I'm not sure that fmap is sane in this case."""
-        raw = TL.f_map(Or)
-        morph = raw(TL.a_lift(Sequence), TL.a_lift(Mapping))
-        tlmorph = TypeLogicMorphism(Or, TL.a_lift(Sequence), TL.a_lift(Mapping))
-        self.assertEqual(
-            morph.bind(isinst({})),
-            tlmorph.bind(isinst({}))
-        )
+
+    def test_f_map_f_apply_equivalency(self):
+        """
+        Ensure
+        f_map(function)(*elements) == f_apply(function, *elements)
+        """
+        elements = (TL.a_lift(Sequence), TL.a_lift(Mapping))
+        function = Or
+        fmap = TL.f_map(function)(*elements)
+        fapp= TL.f_apply(function, *elements)
+
+        for _tran in [isinst({}), isinst([]), isinst(12)]:
+            self.assertEqual(fmap.collapse(_tran), fapp.collapse(_tran))
+
 
     #def test_chaining(self):
     #    t_or = TL.f_map(Or)(TL(Sequence))
