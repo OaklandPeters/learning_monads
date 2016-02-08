@@ -109,6 +109,9 @@ class Category(TypeCheckableMeta):
         return NotImplemented
 
 
+Codomain = typing.TypeVar('Codomain')
+Domain = typing.TypeVar('Domain')
+
 class Functor(typing.Generic[Codomain, Domain]):
     """Maps functions from the Domain to the Codomain. Note, this Functor class cannot actually map elements (that requires Applicative).
 
@@ -130,23 +133,22 @@ class Functor(typing.Generic[Codomain, Domain]):
         """Output type."""
         pass
 
-
-    @abstractmethod
     @classmethod
-    def f_lift(cls, function: 'cls.Codomain.Morphism') -> Codomain.Element:
+    @abstractmethod
+    def f_lift(cls, function: 'cls.Codomain.Morphism') -> 'Codomain.Element':
         """Translate a function."""
 
     @abstractmethod
     @pedanticmethod
-    def f_apply(cls, self: Codomain.Element, function: Domain.Morphism) -> Codomain.Element:
+    def f_apply(cls, self: 'Codomain.Element', function: 'Domain.Morphism') -> 'Codomain.Element':
         """Usually it is easier to write f_apply than f_map.
         """
         # return NotImplemented
         # return cls.f_map(function)()
 
-    @abstractmethod
     @classmethod
-    def f_map(cls, function: Domain.Morphism) -> Codomain.Morphism:
+    @abstractmethod
+    def f_map(cls, function: 'Domain.Morphism') -> 'Codomain.Morphism':
         """Basically 'lift' for morphism.
         Should more or less just: return Morphism(function)
         """
@@ -159,17 +161,16 @@ class Functor(typing.Generic[Codomain, Domain]):
 
 class Applicative(Functor):
     """
-    NOTE: to 'lift' an element, use 'lift'
     Applicative itself is not instanced.
     """
-    @abstractmethod
     @classmethod
-    def lift(cls, value: cls.Domain.Element) -> cls.Codomain.Element:
+    @abstractmethod
+    def lift(cls, value: "cls.Domain.Element") -> 'cls.Codomain.Element':
         pass
 
     @abstractmethod
     @pedanticmethod
-    def a_apply(cls, self: Codomain.Element, morphism: Codomain.Morphism) -> Codomain.Element:
+    def a_apply(cls, self: 'Codomain.Element', morphism: 'Codomain.Morphism') -> 'Codomain.Element':
         pass
 
 
@@ -213,7 +214,6 @@ class MonadElement(Morphism):
     def Category(cls) -> 'Monad':
         return NotImplemented
 
-    @
 
 
 class MonadMorphism(Morphism):
@@ -232,10 +232,10 @@ class MonadMorphism(Morphism):
 
 
 
-class PoliteMonad(Monad, Category, Monoid, Fixed, Traversable, Comonad):
-    """
-    Extremely well-behaved monad that supports basically all the useful functionality.
-    Fixed: recursive behavior
-    Monoid: monadplus behavior
-    Traversable/Comonad/Fixed: These bheavior smight imply one another
-    """
+#class PoliteMonad(Monad, Category, Monoid, Fixed, Traversable, Comonad):
+#    """
+#    Extremely well-behaved monad that supports basically all the useful functionality.
+#    Fixed: recursive behavior
+#    Monoid: monadplus behavior
+#    Traversable/Comonad/Fixed: These bheavior smight imply one another
+#    """
