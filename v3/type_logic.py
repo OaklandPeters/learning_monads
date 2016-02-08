@@ -2,104 +2,272 @@
 Drafting TypeLogic, without reference to category.
 In order to get the 3-category construction correct
 
-Except, this case isn't working out at all like I thought.
+
+BIG MISTAKE:
+    bind : I have it *NOT* returning inside the monad
+
+POSSIBLE FIX:
+    rename current bind --> collapse, and give it the operator <<
+    With the principle that it is usually the final statement on a monad chain
+
+
+
+Next-steps:
+* Make this inherit from typecheckablemeta, and override __instancecheck__, __subclasscheck__ for TypeLogicElement
+* Fixup operators:   compose: 
+* Consider rule: operators are overloaded on both Element and Morphism, and involve lifting or fmaping the RHS
+    * >> : pipe  Morphism >> Morphism -> Compose, Element >> Morphism -> Apply
+    * '**': call Morphism ** values -> __call__, 
+
+
+
 """
 import typing
+import functools
 
-from support_pre import classproperty
+from support_pre import (
+    classproperty,
+    type_check, type_check_sequence,
+    standard_repr, standard_str,
+    TypeCheckableMeta
+)
 import category
 
 
-class TLCategory(category.Category):
-    Element = Element
-    Morphism = Morphism
-
-
-
-class TypeLogic:
-    @classproperty
-    def Category(cls):
-        return TypeLogicCategory
-
-    @classmethod
-    def a_lift(cls, value):
-        return TLElement(value)
-
-    @classmethod
-    def f_apply(cls, function, *values):
-        return TLMorphism(
-            function,
-            values
-        )
-
-    @classmethod
-    def bind(cls, obj: TLOBject, translator: Callable[[type], bool]):
-        if isinstance(obj, cls.Category.Element):
-            return translator(obj.value)
-        elif isinstance(obj, cls.Category.Morphism):
-            return obj.
-        else:
-            raise RuntimeError(str.format(
-                "obj should be type Element ({0}) or Morphism ({1}), not {2}",
-                cls.Category.Element, cls.Category.Morphism, type(obj)
-            ))
-
-
-
-
-class Domain(category.Category):
+class TypeLogicDomain(category.Category):
     Element = type
     Morphism = typing.Callable[[bool], bool]
 
 
-class Codomain(category.Category):
+class TypeLogicCodomain(category.Category):
     Element = bool
     Morphism = typing.Callable[[bool], bool]
 
 
-class TLMorphism:
-    def __init__(self, function, *values):
+Translator = typing.Callable[[TypeLogicDomain.Element], TypeLogicCodomain.Element]
+
+
+class TypeLogic(category.Category):
+    """
+    Unconventional monad, in that the Domain Elements and Morphisms don't line up.
+    """
+    def __new__(cls, value):
+        return cls.a_lift(value)
+
+    @classmethod
+    def a_lift(cls, value):
+        return TypeLogicElement(value)
+
+    @classmethod
+    def f_apply(cls, function, *elements: 'Tuple[cls.Category.Element]') -> 'cls.Category.Morphism':
+        return TypeLogicMorphism(
+            function,
+            *elements
+        )
+
+    @classmethod
+    def f_map(cls, function):
+        """This format may not be valid."""
+        #@functools.wraps(function)
+        #def wrapper(*elements):
+        #    return cls.f_apply(function, *elements)
+        #return TypeLogicMorphism(wrapper)
+        return TypeLogicMorphism(function)
+
+
+    @classmethod
+    def bind(cls, obj: 'TypeLogicObject', translator: Translator) -> bool:
+        """
+        This is actually an abuse of bind.
+        Because it does not return inside the monad
+        """
+        type_check(obj, *(TypeLogicElement, TypeLogicMorphism))
+        if isinstance(obj, TypeLogicMorphism):
+            return obj.function(
+                *(element.bind(translator)
+                  for element in obj.elements)
+            )
+        elif isinstance(obj, TypeLogicElement):
+            return translator(obj.value)
+        else:
+            raise TypeError("This should never happen.")
+
+        #obj.function(*(element.bind(translator) for element in obj.elements))
+
+
+    #
+    #   Type-checking Kruft
+    #
+    @classproperty
+    def Domain(cls):
+        return TypeLogicDomain
+
+    @classproperty
+    def Codomain(cls):
+        return TypeLogicCodomain
+
+    @classproperty
+    def Category(cls):
+        """This is the category of the monad itself."""
+        return TypeLogic
+
+
+#====================
+# Sugar Methods
+#====================
+def Or(left: bool, right: bool) -> bool:
+    return left or right
+
+def And(left: bool, right: bool) -> bool:
+    return left and right
+
+def Not(left: bool) -> bool:
+    return not left
+
+def AndNot(left: bool, right: bool) -> bool:
+    return left and not right
+
+def Compose(left: typing.Callable, right: typing.Callable) -> typing.Callable:
+    @functools.wraps(left)
+    def wrapper(*args, **kwargs):
+        return left(right(*args, **kwargs))
+    return wrapper
+
+
+
+#class TypeLogicSugar(TypeCheckableMeta):
+class TypeLogicSugar:
+    """Stub. This will have to be inherited by the Element and Morphism classes
+    in order to work.
+    """
+    def __or__(self, right):
+        return self.Category.f_apply(Or, self, self.Category.a_lift(right))
+
+    def __and__(self, right):
+        return self.Category.f_apply(And, self, self.Category.a_lift(right))
+
+    def __sub__(self, right):
+        return self.Category.f_apply(AndNot, self, self.Category.a_lift(right))
+        # return cls.f_apply(And(left, cls.f_apply(Not, right) ))
+    
+    def __invert__(self):
+        return self.Category.f_apply(Not, self.Category.a_lift(self))
+
+    def __rshift__(self, translator: Translator):
+        return self.bind(translator)
+
+
+#===================
+# Monad Category
+#===================
+class TypeLogicMorphism(TypeLogicSugar):
+    def __init__(self, function, *elements):
+        type_check_sequence(elements, TypeLogicElement)
         self.function = function
         self.elements = elements
 
+    def __str__(self):
+        return standard_str(self, standard_str(self.function, self.elements))
+
     def __repr__(self):
-        return "{0}({1}({2}))".format(
-            self.__class__.__name__,
-            repr(self.function),
-            ", ".join(repr(elm.value) for elm in self.elements)
-        )
+        return standard_repr(self, standard_repr(self.function, self.elements))
 
 
-class TypeLogicElement:
+    def f_apply(self, *elements):
+        return self.Category.f_apply(self, *elements)
+
+    def bind(self, translator: Translator) -> bool:
+        return self.Category.bind(self, translator)
+
+    @classproperty
+    def Category(cls):
+        return TypeLogic
+
+    # Morphism specific sugar
+    def __xor__(self, other: 'TypeLogicMorphism') -> 'TypeLogicMorphism':
+        return self.Category.f_apply(Compose, self, self.Category.f_map(other))
+
+    def __call__(self, *elements):
+        """This is a weird definition of call. I'm not very confident about it.
+        It basically provides partials/currying.
+        """
+        return self.Category.f_apply(self.function, *(self.elements + elements))
+        #return self.Category.f_apply(self.function, *elements)
+
+
+
+class TypeLogicElement(TypeLogicSugar):
     def __init__(self, value):
         self.value = value
 
     def __repr__(self):
-        return repr(self.value)
+        #return str.format("{0}({1}", self.__class__.__name__, self.value)
+        return standard_repr(self, self.value)
 
-    def bind(self, translator):
+    def __str__(self):
+        return "<{0}>".format(self.value)
+
+    def bind(self, translator: Translator) -> bool:
+        return self.Category.bind(self, translator)
+        #return translator(self.value)
+
+    @classproperty
+    def Category(cls):
+        return TypeLogic
 
 
-class TypeLogicCategory(category.Category):
-    Element = TypeLogicElement
-    Morphism = TypeLogicMorphism
+TypeLogicObject = typing.Union[TypeLogicElement, TypeLogicMorphism]
 
 
 
+
+
+
+
+#==================
+#   Unit Tests
+#==================
 import unittest
 import operator
 
 TL = TypeLogic
-Or = lambda left, right: left or right
-Not = lambda left, right: left and not right
-And = lambda left, right: left and right
+#Or = lambda left, right: left or right
+#Not = lambda left, right: left and not right
+#And = lambda left, right: left and right
 Sequence = typing.Sequence
 Mapping = typing.Mapping
+def isinst(value) -> typing.Callable[[typing.Any], typing.Callable[[type], bool]]:
+    def isinst_klass(klass) -> bool:
+        return isinstance(value, klass)
+    return isinst_klass
+
 
 class TypeLogicTests(unittest.TestCase):
+
+    def test_simple(self):
+        """Lifting a single class. No composition."""
+        def confirm(value, klass, expected):
+            self.assertEqual(
+                TL.a_lift(klass).bind(isinst(value)),
+                expected
+            )
+        confirm("", str, True)
+        confirm(12, str, False)
+        class Stringy(str):
+            pass
+        confirm(Stringy("k"), str, True)
+        confirm("", Sequence, True)
+        confirm([], Sequence, True)
+        confirm({}, Sequence, False)
+
+    def test_morphism(self):
+        inner = TL.f_apply(Or, TL.a_lift(Sequence), TL.a_lift(Mapping))
+        self.assertEqual(inner >> isinst([]), True)
+        self.assertEqual(inner >> isinst(12), False)
+        self.assertEqual(inner >> isinst(""), True)
+
     def test_desired_syntax(self):
-        
-        checkit = TL(Sequence) | Mapping - str
+        checkit = (TL(Sequence) | Mapping) - str
         expected = (
             ("aa", False),
             (["aa"], True),
@@ -108,24 +276,22 @@ class TypeLogicTests(unittest.TestCase):
             ({'first': 'name'}, True),
         )
         for _input, result in expected:
-            self.assertEqual(checkit(_input), result)
+            self.assertEqual(checkit >> isinst(_input), result)
 
 
     def test_desired_syntax_without_sugar(self):
         checkit = (
             TL.f_apply(
-                Not,
+                AndNot,
                 TL.f_apply(
                     Or,
                     TL.a_lift(Sequence),
                     TL.a_lift(Mapping)
                 ),
-                str
+                TL.a_lift(str)
             )
         )
-        # :: type -> bool
-        isit = lambda value: lambda klass: isinstance(value, klass)
-        checkit_call = lambda value: checkit.bind(isit(value))
+        inner = TL.f_apply(Or, TL.a_lift(Sequence), TL.a_lift(Mapping))    
         expected = (
             ("aa", False),
             (["aa"], True),
@@ -133,5 +299,33 @@ class TypeLogicTests(unittest.TestCase):
             (12, False),
             ({'first': 'name'}, True),
         )
+
         for _input, result in expected:
-            self.assertEqual(checkit_call(_input), expected)
+            self.assertEqual(checkit.bind(isinst(_input)), result)
+
+    def test_f_map(self):
+        """I'm not sure that fmap is sane in this case."""
+        raw = TL.f_map(Or)
+        morph = raw(TL.a_lift(Sequence), TL.a_lift(Mapping))
+        tlmorph = TypeLogicMorphism(Or, TL.a_lift(Sequence), TL.a_lift(Mapping))
+        self.assertEqual(
+            morph.bind(isinst({})),
+            tlmorph.bind(isinst({}))
+        )
+
+    #def test_chaining(self):
+    #    t_or = TL.f_map(Or)(TL(Sequence))
+    #    t_or_not = t_or ^ Not
+    #    t_or_not_str = t_or_not(TL(str))
+
+
+    #    print()
+    #    print("t_or_not_str:", type(t_or_not_str), t_or_not_str)
+    #    print()
+    #    import ipdb
+    #    ipdb.set_trace()
+    #    print()
+        
+
+if __name__ == "__main__":
+    unittest.main()
