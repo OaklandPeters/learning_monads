@@ -2,6 +2,7 @@
 Support functions which are used by category.py, so should
 be defined before class defined there, and not have references to them.
 """
+import functools
 
 class classproperty(object):
     """Read-only."""
@@ -69,3 +70,14 @@ class TypeCheckableMeta(type):
             return cls.__subclasscheck__(subclass)
         else:
             return type.__subclasscheck__(cls, subclass)
+
+
+def type_check(value, *klasses, name='object'):
+    if not any(isinstance(value, klass) for klass in klasses):
+        return TypeError(str.format(
+            "{0} should be type {1}, not '{2}'",
+            name.capitalize(),
+            ", ".join("'{0}'".format(klass) for klass in klasses),
+            type(value).__name__,
+        ))
+    return value
