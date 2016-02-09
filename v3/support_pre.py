@@ -60,9 +60,9 @@ class NotPassed:
 class TypeCheckableMeta(type):
     """Makes isinstance and issubclass overrideable."""
 
-    def __instancecheck__(cls, instance):
+    def __instancecheck__(cls, instance):        
         if any('__instancecheck__' in klass.__dict__ for klass in cls.__mro__):
-            return cls.__instancecheck__(instance)
+            return cls.__instancecheck__(cls, instance)
         else:
             return type.__instancecheck__(cls, instance)
 

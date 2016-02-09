@@ -4,17 +4,16 @@ In order to get the 3-category construction correct
 
 
 Next-steps:
-* Rename: bind --> collapse
+* Fixup operator: pipe: ~ compose, given that element A ~== () -> A, so: pipe  Morphism >> Morphism -> Compose, Element >> Morphism -> Apply
+* Fixup operator: traverse: <<
+* Consider rule: operators (1) may polymorphic on the calss of Element and Morphism, and (2) operators should lifting or fmaping the RHS arguments
+* Consider making Element -> Monoid, so '+' can be used to fill in arguments
 
-* Make this inherit from typecheckablemeta, and override __instancecheck__, __subclasscheck__ for TypeLogicElement
-* Fixup operators:   compose: 
-* Consider rule: operators are overloaded on both Element and Morphism, and involve lifting or fmaping the RHS
-    * >> : pipe  Morphism >> Morphism -> Compose, Element >> Morphism -> Apply
-    * '**': call Morphism ** values -> __call__, 
 
 Rewrite plan:
-* Write CallTree (~FunctionMonad with only positional arguments) generalization
+* collapse --> traverse(cls, obj, applicative):
 * Traversable: .traverse(cls, obj: CallTreeObject, functor: Applicative), , then Traversable interface stub
+* Write CallTree (~FunctionMonad with only positional arguments) generalization
 
 
 Call Tree  (~FunctionMonad)
@@ -141,10 +140,15 @@ def Compose(left: typing.Callable, right: typing.Callable) -> typing.Callable:
         return left(right(*args, **kwargs))
     return wrapper
 
+def isinst(value) -> typing.Callable[[typing.Any], typing.Callable[[type], bool]]:
+    def isinst_klass(klass) -> bool:
+        return isinstance(value, klass)
+    return isinst_klass
 
 
-#class TypeLogicSugar(TypeCheckableMeta):
-class TypeLogicSugar:
+
+class TypeLogicSugar(metaclass=TypeCheckableMeta):
+#class TypeLogicSugar:
     """Stub. This will have to be inherited by the Element and Morphism classes
     in order to work.
     """
@@ -227,8 +231,25 @@ class TypeLogicElement(TypeLogicSugar):
 TypeLogicObject = typing.Union[TypeLogicElement, TypeLogicMorphism]
 
 
+#==================
+#  Traversable
+#==================
+class IsInstance(category.Functor[TypeLogicCategory, TypeLogicCodomain]):
+    def __init__(self, value):
+        self.value
 
+    def __call__(self, klass):
+        return isinstance(self.value, klass)
 
+    # This will need some function to handle dispatching over morphism/element
+
+    def a_lift(self):
+        pass
+
+    def f_map(self, morphism: TypeLogicMorphism) -> TypeLogicCodomain.Morphism:
+        # make a boolean function
+        # capturing behavior of morphism.function
+        # Will have to do something to collapse .elements
 
 
 
@@ -239,15 +260,8 @@ import unittest
 import operator
 
 TL = TypeLogic
-#Or = lambda left, right: left or right
-#Not = lambda left, right: left and not right
-#And = lambda left, right: left and right
 Sequence = typing.Sequence
 Mapping = typing.Mapping
-def isinst(value) -> typing.Callable[[typing.Any], typing.Callable[[type], bool]]:
-    def isinst_klass(klass) -> bool:
-        return isinstance(value, klass)
-    return isinst_klass
 
 
 class TypeLogicTests(unittest.TestCase):
@@ -324,6 +338,8 @@ class TypeLogicTests(unittest.TestCase):
 
         for _tran in [isinst({}), isinst([]), isinst(12)]:
             self.assertEqual(fmap.collapse(_tran), fapp.collapse(_tran))
+
+
 
 
     #def test_chaining(self):

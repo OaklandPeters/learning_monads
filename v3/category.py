@@ -4,6 +4,9 @@
 Next-steps:
 * Bring in HigherKindedTypeVar, so Domain.Morphism is sensible
 
+Later-steps:
+* After higher-kinded: Category --> Category(Generic(Domain, Codomain)):. Where Domain, Codomain should be TypeCheckable and have Element and Morphism
+
 CHANGE IT: see if I can prevent Category from being a metaclass. Reason: I would like Monad to be a child of Category
 
 """
