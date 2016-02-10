@@ -20,8 +20,6 @@ import typing
 import utility
 
 
-
-
 def namespace_annotations_corrector(bases, namespace, parameters):
     """
     Replace type-variables inside namespace.
@@ -49,32 +47,17 @@ def _annotations_corrector(function, bases, parameters):
                     position = parent.__parameters__.index(value)
             if position is None:
                 raise ValueError("Could not find position in __parameters__ of parent classes")
-
             # If this is a structured reference, resolve it
             if _is_structured_forward_ref(value):
                 base = parameters[position]
                 tinyns = {value._structured_forward_ref_name: parameters[position]}
-                # my_lambda = "lambda {0}: {1}".format(value._structured_forward_ref_name, value._structured_forward_ref_code)
                 concrete = eval(value._structured_forward_ref_code, tinyns)
-
-
-                print()
-                print("concrete:", type(concrete), concrete)
-                print()
-                import ipdb
-                ipdb.set_trace()
-                print()
-                
-
             else:
                 concrete = parameters[position]
-
             accumulator[key] = concrete
         else:
             accumulator[key] = value
     return accumulator
-
-
 
 
 #==========================
@@ -108,9 +91,6 @@ class CleverForward(typing._ForwardRef):
         rfront = _resolver(name, globalns, localns)
         structured = structured_forward_ref(rfront, name, code_str)
         return structured
-        
-        # resolved = super()._eval_type(globalns, localns)
-        # return resolved
 
 def _is_structured_forward_ref(obj):
     return hasattr(obj, '_structured_forward_ref_name')
@@ -126,22 +106,3 @@ def structured_forward_ref(type_var: typing.TypeVar, name:str, code: str):
     setattr(structured, '_structured_forward_ref_name', name)
     setattr(structured, '_structured_forward_ref_code', code)
     return structured
-#     
-
-
-# def attributes_with_annotations(namespace: typing.Mapping):
-#     for name, value in namespace.items():
-#         yield from _if_annotation(name, value)
-
-# def _if_annotation(name, value):
-#     if hasattr(value, '__annotations__'):
-#         yield (name, value)
-#     # wrapped functions, such as classmethods, try recursive descent
-#     elif hasattr(value, '__func__'):
-#         yield from _if_annotation(value.__func__)
-
-
-
-
-
-
