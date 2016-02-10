@@ -17,6 +17,10 @@ Later Steps:
 """
 import typing
 
+import utility
+
+
+
 
 def namespace_annotations_corrector(bases, namespace, parameters):
     """
@@ -24,20 +28,11 @@ def namespace_annotations_corrector(bases, namespace, parameters):
     This mutates, which is annoying, but copying everything would be slow.
     """
     # Replace type-variables
-    for name, value in namespace.items():
-        _update_annotations(value, bases, parameters)
+    for name, value in utility.attributes_with_annotations(namespace):
+        corrected = _annotations_corrector(value, bases, parameters)
+        value.__annotations__ = corrected
     return namespace
 
-def _update_annotations(value, bases, parameters):
-    if hasattr(value, '__annotations__'):
-        annotations = typing.get_type_hints(value)
-        corrected = _annotations_corrector(value, bases, parameters)            
-        value.__annotations__ = corrected
-        return value
-    # wrapped functions, such as classmethods
-    # NOTE: this may have to handle recursive descent
-    elif hasattr(value, '__func__'):
-        return _update_annotations(value.__func__, bases, parameters)
 
 def _annotations_corrector(function, bases, parameters):
     """
@@ -133,6 +128,17 @@ def structured_forward_ref(type_var: typing.TypeVar, name:str, code: str):
     return structured
 #     
 
+
+# def attributes_with_annotations(namespace: typing.Mapping):
+#     for name, value in namespace.items():
+#         yield from _if_annotation(name, value)
+
+# def _if_annotation(name, value):
+#     if hasattr(value, '__annotations__'):
+#         yield (name, value)
+#     # wrapped functions, such as classmethods, try recursive descent
+#     elif hasattr(value, '__func__'):
+#         yield from _if_annotation(value.__func__)
 
 
 
