@@ -28,15 +28,13 @@ scratch_higher_kinded.py
 import typing
 
 import corrector  # REMOVE LATER
-import annotations
+import forwardref
 
 __all__ = (
     'HKGenericMeta',
     'HKGeneric',
     '_HKForwardRef',
     'HKTypeVar',
-    'AnnotationsDescriptor',
-    'Annotations',
 )
 
 
@@ -47,13 +45,15 @@ class HKGenericMeta(typing.GenericMeta):
         parameters = kwargs.get('parameters', tuple())        
         if parameters and all(not isinstance(value, typing.TypeVar) for value in parameters):
             namespace = corrector.namespace_annotations_corrector(bases, namespace, parameters)
-
             # Tenative
             # namespace = annotations.replace_annotations_in_namespace(namespace)
 
         cls = typing.GenericMeta.__new__(mcls, name, bases, namespace, *args, **kwargs)
         # cls = super().__new__(mcls, name, bases, namespace, *args, **kwargs)
-        # cls = update_higher_kinded(cls)
+
+        # Add reference to class, to Higher-Kinded Forward References
+        namespace = forwardref.add_context_to_hkforwardrefs(cls)
+
         return cls
 
 
@@ -61,18 +61,7 @@ class HKGeneric(typing.Generic, metaclass=HKGenericMeta):
     pass
 
 
-class _HKForwardRef(typing._ForwardRef):
-    pass
-
-
 class HKTypeVar(typing.TypeVar, _root=True):
     pass
 
-
-class AnnotationsDescriptor:
-    pass
-
-
-class Annotations:
-    pass
 
