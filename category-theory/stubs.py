@@ -3,42 +3,53 @@ This version of the typeclasses does not have the mixin methods or the utility f
 They definately *should* be, especially in regard to expressing those in terms of the standard magic methods.
 
 However, this is just a stub.
+
+@todo: Create seperate files for each typeclass
+@todo: Mixin methods
+@todo: Utility functions
+@todo: Generic functions
+@todo: Laws for each type class, in text and unit-test form.
 """
 
-import typing
+from typing import Callable, TypeVar, Generic
 from abc import abstractmethod
 
 from support_pre import abstractclassproperty, abstractclassmethod
 
 
-FoldableInType = typing.TypeVar('FoldableInType')
-FoldableOutType = typing.TypeVar('FoldableOutType')
+FoldableInType = TypeVar('FoldableInType')
+FoldableOutType = TypeVar('FoldableOutType')
 
 
-class Foldable(typing.Generic[FoldableInType, FoldableOutType]):
+class Foldable(Generic[FoldableInType, FoldableOutType]):
     @abstractmethod
     def foldr(self,
-              function: typing.Callable[FoldableInType, FoldableOutType],
+              function: Callable[FoldableInType, FoldableOutType],
               accumulator: FoldableOutType) -> FoldableOutType:
         return NotImplemented
 
 
-class Monoid:
+MonoidElement = TypeVar('MonoidElement')
+
+
+class Monoid(Generic[MonoidElement]):
     @abstractclassmethod
-    def zero(cls):
+    def zero(cls) -> 'Monoid[MonoidElement]':
         return NotImplemented
 
     @abstractmethod
-    def append(self, other):
+    def append(self, other: 'Monoid[MonoidElement]') -> 'Monoid[MonoidElement]':
         return NotImplemented
 
 
-class Reducable(Foldable, Monoid):
+ReducibleElement = TypeVar('ReducibleElement')
 
-    def reduceMap(self, function: Reducer) -> Reducable:
+class Reducible(Foldable, Monoid):
+
+    def reduceMap(self, function: Callable[ReducibleElement, ReducibleElement]) -> 'Reducible[ReducibleElement]':
         return self.foldr(function, self.zero())
 
-    def reduce(cls):
+    def reduce(self):
         return self.foldr(self.append, self.zero())
 
 
@@ -48,7 +59,7 @@ class Categorized:
         return NotImplemented
 
 
-class Morphism(typing.Callable, Categorized):
+class Morphism(Callable, Categorized):
     @abstractclassmethod
     def __new__(cls, function: Callable):
         """Unsafe lifting operation.
@@ -57,10 +68,10 @@ class Morphism(typing.Callable, Categorized):
         is a Morphism in this category"""
         return NotImplemented
 
-    def compose(self, other) -> Morphism:
+    def compose(self, other) -> 'Morphism':
         return self.Category.compose(self, other)
 
-    def call(self, element: Element) -> Element:
+    def __call__(self, element: 'Element') -> 'Element':
         return self.Category.call(self, element)
 
 
@@ -71,12 +82,13 @@ class Element(Categorized):
         Wraps a function as a Morphism of this type.
         There is often no reasonable to gaurantee that it actually
         is a Morphism in this category"""
-        return NotImplemtned
+        return NotImplemented
 
     def apply(self, morphism: Morphism):
-        return 
+        return NotImplemented
 
-class Category(typing.Generic[Element, Morphism]):
+
+class Category(Generic[Element, Morphism]):
     """
     Query: can morphisms map elements to morphisms? I suspect not.
     """
@@ -106,13 +118,30 @@ class Category(typing.Generic[Element, Morphism]):
         return morphism(element)
 
 
-Domain = typing.TypeVar('Domain', bound=Category)
-Codomain = typing.TypeVar('Codomain', bound=Category)
+Domain = TypeVar('Domain', bound=Category)
+Codomain = TypeVar('Codomain', bound=Category)
 
 
-class Functor(typing.Generic[Domain, Codomain]):
-    @abstractmethod
-    def map(cls, function: Domain.Morphism) -> Codomain.Morphism:
+class Functor(Generic[Domain, Codomain]):
+    @abstractclassmethod
+    def map_morphism(cls, function: Domain.Morphism) -> Codomain.Morphism:
         return NotImplemented
 
 
+class Applicative(Functor):
+    @abstractclassmethod
+    def map_element(cls, value: Domain.Element) -> Codomain.Element:
+        return NotImplemented
+
+
+
+
+class Monad(Applicative):
+    @abstractclassmethod
+    def lift_element(cls):
+        return NotImplemented
+
+    
+
+    @abstractclassmethod
+    def bind(cls, function):
