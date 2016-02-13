@@ -3,7 +3,7 @@ Support functions which are used by category.py, so should
 be defined before class defined there, and not have references to them.
 """
 import functools
-
+import abc
 
 class classproperty(object):
     """Read-only."""
@@ -22,6 +22,10 @@ class abstractclassproperty(classproperty):
     """
 
     __isabstractmethod__ = True
+
+
+def abstractclassmethod(getter):
+    return abc.abstractmethod(classmethod(getter))
 
 
 class pedanticmethod:

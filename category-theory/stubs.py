@@ -1,14 +1,21 @@
+"""
+This version of the typeclasses does not have the mixin methods or the utility functions included.
+They definately *should* be, especially in regard to expressing those in terms of the standard magic methods.
 
+However, this is just a stub.
+"""
 
 import typing
 from abc import abstractmethod
+
+from support_pre import abstractclassproperty, abstractclassmethod
 
 
 FoldableInType = typing.TypeVar('FoldableInType')
 FoldableOutType = typing.TypeVar('FoldableOutType')
 
 
-class Foldable:
+class Foldable(typing.Generic[FoldableInType, FoldableOutType]):
     @abstractmethod
     def foldr(self,
               function: typing.Callable[FoldableInType, FoldableOutType],
