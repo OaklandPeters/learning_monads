@@ -7,6 +7,7 @@ import typing
 from support_pre import abstractclassproperty
 import hktyping
 import corrector
+import forwardref
 
 
 #======================================
@@ -111,6 +112,27 @@ class HKGenericTests(unittest.TestCase):
             typing.get_type_hints(listf.fmap_like),
             {'function': AnyCategory, 'return': ListCategory})
 
+
+    def test_hktyperef(self):
+        Domain = hktyping.HKTypeVar('Domain')
+        # This doesn't actually need the generic paramter for anything
+        class BoringClass(hktyping.HKGeneric[Domain]):
+            category = ListCategory
+            def __init__(self, data):
+                self.data = data
+
+            def mapper(self, function: typing.Callable) -> forwardref._HKForwardRefDumb('Domain'):
+                return [function(elm) for elm in self.data]
+
+        lc = BoringClass.mapper.__annotations__['return']
+
+        print()
+        print("lc:", type(lc), lc)
+        print()
+        import ipdb
+        ipdb.set_trace()
+        print()
+        
 
     #def test_standard_forward_ref(self):
     #    Domain = typing.TypeVar('Domain')

@@ -11,3 +11,4 @@ def _if_annotation(name, value):
     # wrapped functions, such as classmethods, try recursive descent
     elif hasattr(value, '__func__'):
         yield from _if_annotation(value.__func__)
+
