@@ -9,40 +9,80 @@ However, this is just a stub.
 @todo: Utility functions
 @todo: Generic functions
 @todo: Laws for each type class, in text and unit-test form.
+@todo: Determine if monoid should include 'join' (I don't recall if it is implied or not)
+@todo: Handle the fact that Monoid is defined on 1 typevar, and foldable on 2. How to combine these in multiple inheritance?
 """
 
 from typing import Callable, TypeVar, Generic
-from abc import abstractmethod
+from abc import abstractmethod, abstractclassmethod
 
-from support_pre import abstractclassproperty, abstractclassmethod
-
-
-FoldableInType = TypeVar('FoldableInType')
-FoldableOutType = TypeVar('FoldableOutType')
+from support_pre import abstractclassproperty
 
 
-class Foldable(Generic[FoldableInType, FoldableOutType]):
-    @abstractmethod
-    def foldr(self,
+InType = TypeVar('InType')
+OutType = TypeVar('OutType')
+Element = TypeVar('Element')
+
+
+class Foldable(Generic[InType, OutType]):
+    @abstractpedanticmethod
+    def foldr(cls,
+              self: 'Foldable[InType, OutType]',
               function: Callable[FoldableInType, FoldableOutType],
               accumulator: FoldableOutType) -> FoldableOutType:
         return NotImplemented
 
 
-MonoidElement = TypeVar('MonoidElement')
-
-
-class Monoid(Generic[MonoidElement]):
+class Zeroable:
+    """In most cases, this indicates a container that can be 'empty'."""
     @abstractclassmethod
-    def zero(cls) -> 'Monoid[MonoidElement]':
+    def zero(cls):
+        return NotImplemented
+
+
+class Semigroup(Generic[Element]):
+    @abstractpedanticmethod
+    def append(self, other: 'Semigroup[Element]') -> 'Semigroup[Element]':
+        return NotImplemented
+
+
+class Monoid(Zeroable, SemiGroup):
+    @classmethod
+    def flatten(cls, foldable: Foldable):
+        """Fold a structure, using the rules of this monoid.
+        Haskell calls this 'mconcat'.
+        sum = lambda foldable_list_of_ints: AdditionMonoid.flatten(foldable_list_of_ints)
+        """
+        return foldable.foldr(cls.append, cls.zero())
+
+
+
+class Reducable(Foldable, Zeroable):
+    @pedanticmethod
+    def reduce(cls, self, function):
+        return cls.foldr(self, function, cls.zero())
+
+
+class Joinable(Foldable, Zeroable, Semigroup):
+    @pedanticmethod
+    def join(cls, self):
+        """Uses the natural append operation of a monoid in a foldr.
+
+        Haskell calls this 'fold'."""
+        return cls.foldr(self, cls.append, cls.zero())
+
+
+class Monoid(Zeroable, Semigroup):
+    @abstractclassmethod
+    def zero(cls) -> 'Monoid[Element]':
         return NotImplemented
 
     @abstractmethod
-    def append(self, other: 'Monoid[MonoidElement]') -> 'Monoid[MonoidElement]':
+    def append(self, other: 'Monoid[Element]') -> 'Monoid[Element]':
         return NotImplemented
 
 
-ReducibleElement = TypeVar('ReducibleElement')
+
 
 class Reducible(Foldable, Monoid):
 
@@ -84,7 +124,7 @@ class Element(Categorized):
         is a Morphism in this category"""
         return NotImplemented
 
-    def apply(self, morphism: Morphism):
+    def apply(self, morphism: Morphism) -> 'Element':
         return NotImplemented
 
 
