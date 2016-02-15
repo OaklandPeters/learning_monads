@@ -24,10 +24,6 @@ class abstractclassproperty(classproperty):
     __isabstractmethod__ = True
 
 
-def abstractclassmethod(getter):
-    return abc.abstractmethod(classmethod(getter))
-
-
 class pedanticmethod:
     """
     Allows a method to be used as both a classmethod and an instancmethod, but in the specific (and pedantic) way so that:
@@ -42,8 +38,22 @@ class pedanticmethod:
             if obj is not None:  # instancemethod
                 return self.method(type(obj), obj, *positional, **keywords)
             else:  # classmethod
-                return self.method(objtype, *positional, **keywords)
+                return self.method(objtype, *positional, **keywords)                
         return _wrapper
+
+
+class abstractpedanticmethod(pedanticmethod):
+    """Abstract method, intended to be overridden as a pedanticmethod - that is,
+    one usable as both a classmethod and an instancemethod.
+
+    KNOWN PROBLEM: Overridding this with @classmethod produces no errors,
+    but it probably should.
+    """
+    __isabstractmethod__ = True
+
+    def __init__(self, _callable):
+        _callable.__isabstractmethod__ = True
+        super().__init__(_callable)
 
 
 def check_validation(cls, *args, **kwargs) -> None:
