@@ -13,85 +13,18 @@ However, this is just a stub.
 @todo: Handle the fact that Monoid is defined on 1 typevar, and foldable on 2. How to combine these in multiple inheritance?
 """
 
-from typing import Callable, TypeVar, Generic
+from typing import TypeVar, Generic
 from abc import abstractmethod, abstractclassmethod
+from collections import Callable
 
-from support_pre import abstractclassproperty
-
-
-InType = TypeVar('InType')
-OutType = TypeVar('OutType')
-Element = TypeVar('Element')
-
-
-class Foldable(Generic[InType, OutType]):
-    @abstractpedanticmethod
-    def foldr(cls,
-              self: 'Foldable[InType, OutType]',
-              function: Callable[FoldableInType, FoldableOutType],
-              accumulator: FoldableOutType) -> FoldableOutType:
-        return NotImplemented
-
-
-class Zeroable:
-    """In most cases, this indicates a container that can be 'empty'."""
-    @abstractclassmethod
-    def zero(cls):
-        return NotImplemented
-
-
-class Semigroup(Generic[Element]):
-    @abstractpedanticmethod
-    def append(self, other: 'Semigroup[Element]') -> 'Semigroup[Element]':
-        return NotImplemented
-
-
-class Monoid(Zeroable, SemiGroup):
-    @classmethod
-    def flatten(cls, foldable: Foldable):
-        """Fold a structure, using the rules of this monoid.
-        Haskell calls this 'mconcat'.
-        sum = lambda foldable_list_of_ints: AdditionMonoid.flatten(foldable_list_of_ints)
-        """
-        return foldable.foldr(cls.append, cls.zero())
+from support_pre import abstractclassproperty, abstractpedanticmethod, pedanticmethod
 
 
 
-class Reducable(Foldable, Zeroable):
-    @pedanticmethod
-    def reduce(cls, self, function):
-        return cls.foldr(self, function, cls.zero())
-
-
-class Joinable(Foldable, Zeroable, Semigroup):
-    @pedanticmethod
-    def join(cls, self):
-        """Uses the natural append operation of a monoid in a foldr.
-
-        Haskell calls this 'fold'."""
-        return cls.foldr(self, cls.append, cls.zero())
-
-
-class Monoid(Zeroable, Semigroup):
-    @abstractclassmethod
-    def zero(cls) -> 'Monoid[Element]':
-        return NotImplemented
-
-    @abstractmethod
-    def append(self, other: 'Monoid[Element]') -> 'Monoid[Element]':
-        return NotImplemented
-
-
-
-
-class Reducible(Foldable, Monoid):
-
-    def reduceMap(self, function: Callable[ReducibleElement, ReducibleElement]) -> 'Reducible[ReducibleElement]':
-        return self.foldr(function, self.zero())
-
-    def reduce(self):
-        return self.foldr(self.append, self.zero())
-
+# ===============================
+#     Category-theoretic
+#        structures
+# ===============================
 
 class Categorized:
     @abstractclassproperty
@@ -128,7 +61,11 @@ class Element(Categorized):
         return NotImplemented
 
 
-class Category(Generic[Element, Morphism]):
+ElementTV = TypeVar('ElementTV', bound=Element)
+MorphismTV = TypeVar('MorphismTV', bound=Morphism)
+
+
+class Category(Generic[ElementTV, MorphismTV]):
     """
     Query: can morphisms map elements to morphisms? I suspect not.
     """
@@ -141,7 +78,7 @@ class Category(Generic[Element, Morphism]):
         return NotImplemented
 
     @classmethod
-    def compose(cls, left: Morphism, right: Morphism) -> Morphism:
+    def compose(cls, left: MorphismTV, right: MorphismTV) -> MorphismTV:
         """Some categories may override this, but we are providing
         a default definition, since it will be the most common one.
         When this is overridden, it is usually in an Arrow Category."""
@@ -150,38 +87,124 @@ class Category(Generic[Element, Morphism]):
         return cls.Morphism(wrapper)
 
     @classmethod
-    def apply(cls, element: Element, morphism: Morphism) -> Element:
+    def apply(cls, element: ElementTV, morphism: MorphismTV) -> ElementTV:
         return morphism(element)
 
     @classmethod
-    def call(cls, morphism: Morphism, element: Element) -> Element:
+    def call(cls, morphism: MorphismTV, element: ElementTV) -> ElementTV:
         return morphism(element)
 
 
+
+# ===============================
+#   Functor and Monad
+# ===============================
+
 Domain = TypeVar('Domain', bound=Category)
 Codomain = TypeVar('Codomain', bound=Category)
+MonadCategory = TypeVar('MonadCategory', bound=Category)
 
 
 class Functor(Generic[Domain, Codomain]):
     @abstractclassmethod
-    def map_morphism(cls, function: Domain.Morphism) -> Codomain.Morphism:
+    def map_morphism(cls, function: 'Domain.Morphism') -> 'Codomain.Morphism':
+        """fmap"""
         return NotImplemented
 
 
 class Applicative(Functor):
     @abstractclassmethod
-    def map_element(cls, value: Domain.Element) -> Codomain.Element:
+    def map_element(cls, value: 'Domain.Element') -> 'Codomain.Element':
         return NotImplemented
 
 
-
-
-class Monad(Applicative):
+class MonadIn(Applicative[Domain, MonadCategory]):
     @abstractclassmethod
-    def lift_element(cls):
+    def lift(cls):
         return NotImplemented
 
-    
 
+class MonadOut(Applicative[MonadCategory, Codomain]):
+    @abstractpedanticmethod
+    def bind(cls, self, function):
+        return NotImplemented
+
+
+class Monad(MonadIn[Domain, MonadCategory], MonadOut[MonadCategory, Codomain]):
+    pass
+
+#class Monad(Applicative):
+#    @abstractclassmethod
+#    def lift(cls):
+#        return NotImplemented
+
+#    @abstractclassmethod
+#    def bind(cls, function):
+#        return NotImplemented
+
+
+# ===============================
+#   Group-theory classes
+# 
+# ===============================
+
+InType = TypeVar('InType')
+OutType = TypeVar('OutType')
+Element = TypeVar('Element')
+
+class Foldable(Generic[InType, OutType]):
+    @abstractpedanticmethod
+    def foldr(cls,
+              self: 'Foldable[InType, OutType]',
+              function: Callable[[InType], OutType],
+              initial: OutType) -> OutType:
+        """
+        The initial is also used as the accumulator."""
+        return NotImplemented
+
+
+class Zeroable:
+    """In most cases, this indicates a container that can be 'empty'."""
     @abstractclassmethod
-    def bind(cls, function):
+    def zero(cls):
+        return NotImplemented
+
+
+class SemiGroup(Generic[Element]):
+    @abstractpedanticmethod
+    def append(self, other: 'SemiGroup[Element]') -> 'SemiGroup[Element]':
+        return NotImplemented
+
+
+class Monoid(Zeroable, SemiGroup):
+    @classmethod
+    def flatten(cls, foldable: Foldable):
+        """Fold a structure, using the rules of this monoid.
+        Haskell calls this 'mconcat'.
+        sum = lambda foldable_list_of_ints: AdditionMonoid.flatten(foldable_list_of_ints)
+        """
+        return foldable.foldr(cls.append, cls.zero())
+
+
+class Reducable(Foldable, Zeroable):
+    @pedanticmethod
+    def reduce(cls, self, function):
+        return cls.foldr(self, function, cls.zero())
+
+
+class Joinable(Foldable, Zeroable, SemiGroup):
+    @pedanticmethod
+    def join(cls, self):
+        """Uses the natural append operation of a monoid in a foldr.
+        Haskell calls this 'fold'."""
+        return cls.foldr(self, cls.append, cls.zero())
+
+
+class Monoid(Zeroable, SemiGroup):
+    @abstractclassmethod
+    def zero(cls) -> 'Monoid[Element]':
+        return NotImplemented
+
+    @abstractmethod
+    def append(self, other: 'Monoid[Element]') -> 'Monoid[Element]':
+        return NotImplemented
