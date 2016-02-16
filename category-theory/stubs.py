@@ -11,6 +11,8 @@ However, this is just a stub.
 @todo: Laws for each type class, in text and unit-test form.
 @todo: Determine if monoid should include 'join' (I don't recall if it is implied or not)
 @todo: Handle the fact that Monoid is defined on 1 typevar, and foldable on 2. How to combine these in multiple inheritance?
+@todo: Mechanism for Morphism is typecheck (~ StandardMorphism(Callable, etc))
+@todo: Mechanism for Element to typecheck.
 """
 
 from typing import TypeVar, Generic
@@ -33,19 +35,67 @@ class Categorized:
 
 
 class Morphism(Callable, Categorized):
+    """
+    Morphism needs to be able to typecheck.
+
+    Note: because of the category laws, the Morphisms in a Category
+    forms a Monoid.
+
+    Because the Morphism should typecheck, 
+    """
     @abstractclassmethod
     def __new__(cls, function: Callable):
         """Unsafe lifting operation.
         Wraps a function as a Morphism of this type.
-        There is often no reasonable to gaurantee that it actually
+        There is often no reasonable way to gaurantee that it actually
         is a Morphism in this category"""
         return NotImplemented
 
-    def compose(self, other) -> 'Morphism':
-        return self.Category.compose(self, other)
+    @abstractpedanticmethod
+    def compose(cls, self, other) -> 'Morphism':
+        return NotImplemented
+
+    @abstractclassmethod
+    def identity(cls) -> 'Morphism':
+        """Return the identity morphism for this category.
+        For various reasons, we are not making this a property."""
+        return NotImplemented
+
+    @abstractpedanticmethod
+    def call(cls, self: 'Morphism', element: 'Element'):
+        """Can't be written automatically, because it would depend on the way
+        that the functinos are stored inside the Morphism class."""
+        return NotImplemented
 
     def __call__(self, element: 'Element') -> 'Element':
-        return self.Category.call(self, element)
+        return self.call(element)
+
+    # Morphism forms a monoid
+    @pedanticmethod
+    def append(cls, self: 'Monoid', other: 'Monoid'):
+        return cls.compose(self, other)
+
+    @classmethod
+    def zero(cls):
+        return cls.identity()
+
+def _identity(element):
+    return element
+
+class StandardMorphism(Morphism):
+    """
+    The identity, compose and call functions for most Morphisms are the same.
+    """
+    @classmethod
+    def identity(cls):
+        return cls(_identity)
+
+    @pedanticmethod
+    def compose(cls, self, other):
+        def composed(element):
+            return other.call(self.call(element))
+        return cls(composed)
+
 
 
 class Element(Categorized):
