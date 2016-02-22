@@ -13,6 +13,16 @@ However, this is just a stub.
 @todo: Handle the fact that Monoid is defined on 1 typevar, and foldable on 2. How to combine these in multiple inheritance?
 @todo: Mechanism for Morphism is typecheck (~ StandardMorphism(Callable, etc))
 @todo: Mechanism for Element to typecheck.
+
+Future packages:
+category.py: Category, Element, Morphism - maybe Semicategory/Semigroup, Groupoid
+monad.py: functor, applicative, monad
+traverse.py: Foldable, Traversable
+groups.py: Zeroable, SemiGroup, Monoid
+transform.py: traverse + groups: Reducable, Joinable
+
+I'm choosing to make the distinction, properties on Morphisms (--> Category) vs properties on Elements (--> Monoids)
+
 """
 
 from typing import TypeVar, Generic
@@ -81,22 +91,6 @@ class Morphism(Callable, Categorized):
 
 def _identity(element):
     return element
-
-class StandardMorphism(Morphism):
-    """
-    The identity, compose and call functions for most Morphisms are the same.
-    """
-    @classmethod
-    def identity(cls):
-        return cls(_identity)
-
-    @pedanticmethod
-    def compose(cls, self, other):
-        def composed(element):
-            return other.call(self.call(element))
-        return cls(composed)
-
-
 
 class Element(Categorized):
     @abstractclassmethod
@@ -227,6 +221,9 @@ class SemiGroup(Generic[Element]):
 
 
 class Monoid(Zeroable, SemiGroup):
+    """
+    > In Haskell, the Monoid typeclass (not to be confused with Monad) is a class for types which have a single most natural operation for combining values, together with a value which doesn't do anything when you combine it with others (this is called the identity element). It is closely related to the Foldable class, and indeed you can think of a Monoid instance declaration for a type m as precisely what you need in order to fold up a list of values of m.
+    """
     @classmethod
     def flatten(cls, foldable: Foldable):
         """Fold a structure, using the rules of this monoid.
@@ -248,13 +245,3 @@ class Joinable(Foldable, Zeroable, SemiGroup):
         """Uses the natural append operation of a monoid in a foldr.
         Haskell calls this 'fold'."""
         return cls.foldr(self, cls.append, cls.zero())
-
-
-class Monoid(Zeroable, SemiGroup):
-    @abstractclassmethod
-    def zero(cls) -> 'Monoid[Element]':
-        return NotImplemented
-
-    @abstractmethod
-    def append(self, other: 'Monoid[Element]') -> 'Monoid[Element]':
-        return NotImplemented
