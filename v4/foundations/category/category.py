@@ -2,7 +2,7 @@ from abc import abstractclassmethod
 from collections import Callable
 
 from ...support.typecheckable import TypeCheckableMeta
-from ...support.methods import abstractclassproperty, abstractpedanticmethod
+from ...support.methods import abstractclassproperty, abstractpedanticmethod, pedanticmethod
 
 
 class Categorized(metaclass=TypeCheckableMeta):

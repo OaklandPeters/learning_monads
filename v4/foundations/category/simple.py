@@ -1,22 +1,17 @@
 """
-Convenience functions for creating versions of Category/Element/Morphism
-with 'standard' level behavior.
+Stubs for convenience functions for creating versions of Category/Element/Morphism
+with 'standard' level behavior. These are intended to exist just enough
+to get the example functors/monads/categories done.
 
 Right now, these are stubs - and will need to be replaced with metaclass-type
-things later. Inspiration for those metaclasses should be drawn from typing.py.
+things later (augmented/standard_sugar.py).
+Inspiration for those metaclasses should be drawn from typing.py.
 """
 from typing import Any, Callable
 
+# from ...support.methods import abstractclassproperty
 from ...support.typecheckable import TypeCheckableMeta
 from .category import Category, Element, Morphism
-
-class StandardCategory:
-    """Stub. Will need to be a metaclass thing later."""
-    def __new__(cls, element, morphism):
-        class _Category(Category):
-            Element = element
-            Morphism = morphism
-        return _Category
 
 
 # ===================================
@@ -24,55 +19,58 @@ class StandardCategory:
 #
 # ===================================
 
-#    UNFINISHED - so the names are intentionally weird
-
-class StandardMeta(TypeCheckableMeta):
-    """
-    The approach to building the StandardCategory/StandardElement/StandardMorphism
-    is to use their individual __new__ methods to define the interface, then
-    defer to StandardMeta.__new__ to actually build the class.
-    """
+class SimpleBaseMeta(TypeCheckableMeta):
     def __new__(cls, name, bases, namespace):
         return super().__new__(cls, name, bases, namespace)
 
-class StandardTypeChecker(TypeCheckableMeta):
-    """
-    @todo: Should this have (metaclass=ABCMeta), to enable abstract checks? Or will that create diamond-pattern errors for metaclasses when merging with Element (which uses TypeCheckableMeta)
-    """
-    @abstractclassproperty
-    def _instancechecker_data(cls):
-        return NotImplemented
+    def __init__(self, *args, **kwargs):
+        pass
 
-    @abstractclassproperty
-    def _subclasschecker_data(cls):
-        return NotImplemented
 
-    @classmethod
+class SimpleMeta(SimpleBaseMeta):
+    def __new__(cls, name, base=Any):
+        self =  super().__new__(cls, name, tuple([Element]), {})
+        self._instancechecker_data = (base, )
+        self._subclasschecker_data = (base, )
+        return self
+
+    # Predefined type-checking proxies
     def __instancecheck__(cls, instance):
-        return isinstance(instance, cls._instancechecker_data)
+        # Hack: to make this play well with typing.Any, etc
+        return issubclass(type(instance), cls._instancechecker_data)
 
-    @classmethod
     def __subclasscheck__(cls, subclass):
         return issubclass(subclass, cls._subclasschecker_data)
 
 
-class StandardElement_usingMeta(StandardMeta, metaclass=StandardMeta):
-    def __new__(cls, name='Element', element_type=typing.Any):
-
-        self = super().__new__(cls, name, (Element, StandardTypeChecker), {})
-    
-
-
-class StandardMorphism_usingMeta(StandardMeta, metaclass=StandardMeta):
-    def __new__(cls, morphism_type):
-        self = super().__new__(cls, 'Morphism', ())
+class SimpleElement(SimpleBaseMeta):
+    def __new__(cls, name='Element', base=Any):
+        self = super().__new__(cls, name, tuple([Element]), {})
+        self._instancechecker_data = (base, )
+        self._subclasschecker_data = (base, )
+        return self
 
 
-class StandardCategory_usingMeta(StandardMeta, metaclass=StandardMeta):
-    """
-    @todo: Validate element_type, morphism_type as TypeCheckable
-    """
-    def __new__(cls, name, element_type, morphism_type):
-        Element = 
-        self = super().__new__(cls, name, (), {'Element': element_type, 'Morphism': morphism_type})
+class SimpleMorphism(SimpleBaseMeta):
+    def __new__(cls, name='Morphism', base=Callable[[Any], Any]):
+        self = super().__new__(cls, name, tuple([Morphism]), {})
+        self._instancechecker_data = (base, )
+        self._subclasschecker_data = (base, )
+        return self
 
+
+class SimpleCategory(SimpleBaseMeta):
+    def __new__(cls, name='Category', element_type=Any, morphism_type=Callable[[Any], Any]):
+        if issubclass(element_type, Element):
+            element = element_type
+        else:
+            element = SimpleElement(name=name+'Element', base=element_type)
+
+        if issubclass(morphism_type, Morphism):
+            morphism = morphism_type
+        else:
+            morphism = SimpleMorphism(name=name+'Morphism', base=morphism_type)
+
+        self = super().__new__(cls, name, tuple([Category]),
+                               {'Element': element, 'Morphism': morphism})
+        return self

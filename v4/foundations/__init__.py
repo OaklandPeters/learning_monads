@@ -10,29 +10,29 @@ Misc notes:
 """
 
 
-__all__ = (
-    # Category-theoretic
-    'Element',
-    'Morphism',
-    'Identifiable',
-    'Semicategory',
-    'Category',
-    'Groupoid',
-    # Walking
-    'Foldable',
-    'Traversable',
-    # Group-Theory
-    'Zeroable',
-    'Semigroup',
-    'Monoid',
-    'Group',
-    # Transformable-groups
-    'Reducable',
-    'Joinable',
-    'Collapsible',
-    # Functorial
-    'Functor',
-    'Applicative',
-    'Monad',
-    'Arrow',
-)
+# __all__ = (
+#     # Category-theoretic
+#     'Element',
+#     'Morphism',
+#     'Identifiable',
+#     'Semicategory',
+#     'Category',
+#     'Groupoid',
+#     # Walking
+#     'Foldable',
+#     'Traversable',
+#     # Group-Theory
+#     'Zeroable',
+#     'Semigroup',
+#     'Monoid',
+#     'Group',
+#     # Transformable-groups
+#     'Reducable',
+#     'Joinable',
+#     'Collapsible',
+#     # Functorial
+#     'Functor',
+#     'Applicative',
+#     'Monad',
+#     'Arrow',
+# )
