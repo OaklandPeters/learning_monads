@@ -31,7 +31,7 @@ class Decorator(DomainTranslator):
 
 
 class Constructor(DomainTranslator):
-    """A functor needs to have one authoritative element constructor."""
+    """A functor needs to have one element constructor which is considered authoritative."""
     @abstractclassmethod
     def construct(cls, element: 'Domain.Element') -> 'Codomain.Element':
         return NotImplemented
