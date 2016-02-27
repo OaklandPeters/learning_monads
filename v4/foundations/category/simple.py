@@ -7,9 +7,9 @@ Right now, these are stubs - and will need to be replaced with metaclass-type
 things later (augmented/standard_sugar.py).
 Inspiration for those metaclasses should be drawn from typing.py.
 """
-from typing import Any, Callable
+from typing import Any, Callable, TypingMeta
 
-# from ...support.methods import abstractclassproperty
+from ...support.methods import pedanticmethod, classproperty
 from ...support.typecheckable import TypeCheckableMeta
 from .category import Category, Element, Morphism
 
@@ -26,34 +26,57 @@ class SimpleBaseMeta(TypeCheckableMeta):
     def __init__(self, *args, **kwargs):
         pass
 
-
-class SimpleMeta(SimpleBaseMeta):
-    def __new__(cls, name, base=Any):
-        self =  super().__new__(cls, name, tuple([Element]), {})
-        self._instancechecker_data = (base, )
-        self._subclasschecker_data = (base, )
-        return self
-
     # Predefined type-checking proxies
     def __instancecheck__(cls, instance):
-        # Hack: to make this play well with typing.Any, etc
-        return issubclass(type(instance), cls._instancechecker_data)
+        try:
+            return isinstance(instance, cls._instancechecker_data)
+        # Hack: to make this play well with typing module, Any, Union etc
+        except TypeError as exc:
+            if len(cls._instancechecker_data) == 1:
+                if isinstance(cls._instancechecker_data[0], TypingMeta):
+                    return issubclass(type(instance), cls._instancechecker_data)
+            raise
 
     def __subclasscheck__(cls, subclass):
         return issubclass(subclass, cls._subclasschecker_data)
 
 
+class SimpleElementMixin(Element):
+    @pedanticmethod
+    def apply(cls, self, morphism):
+        return morphism(self)
+
+
 class SimpleElement(SimpleBaseMeta):
     def __new__(cls, name='Element', base=Any):
-        self = super().__new__(cls, name, tuple([Element]), {})
+        self = super().__new__(cls, name, tuple([SimpleElementMixin]), {})
         self._instancechecker_data = (base, )
         self._subclasschecker_data = (base, )
         return self
 
 
+def _identity(value):
+    return value
+
+class SimpleMorphismMixin(Morphism):
+    @pedanticmethod
+    def compose(cls, self, other):
+        def composed(value):
+            return other(self(value))
+        return composed
+
+    @pedanticmethod
+    def call(cls, self, element):
+        return self(element)
+
+    @classproperty
+    def identity(cls):
+        return _identity
+
+
 class SimpleMorphism(SimpleBaseMeta):
     def __new__(cls, name='Morphism', base=Callable[[Any], Any]):
-        self = super().__new__(cls, name, tuple([Morphism]), {})
+        self = super().__new__(cls, name, tuple([SimpleMorphismMixin]), {})
         self._instancechecker_data = (base, )
         self._subclasschecker_data = (base, )
         return self

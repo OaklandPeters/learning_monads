@@ -8,28 +8,20 @@ from v4.foundations.category.simple import SimpleElement, SimpleMorphism, Simple
 class SimpleCategoryTestCase(unittest.TestCase):
     def test_element(self):
         StringElement = SimpleElement('StringElement', str)
-
-        self.assertIsInstance("x", StringEleemnt)
-
-
-        print()
-        print("StringElement:", type(StringElement), StringElement)
-        print()
-        import ipdb
-        ipdb.set_trace()
-        print()
-        
-
-        self.assertTrue(isinstance(12, StringElement))
-        self.assertTrue(isinstance('xx', StringElement))
+        self.assertIsInstance("x", StringElement)
+        self.assertNotIsInstance(12, StringElement)
+        self.assertIsInstance('xx', StringElement)
 
     def test_category(self):
         DictCategory = SimpleCategory('DictCategory', Dict, Callable[[Dict], Dict])
 
-        self.assertTrue(isinstance({}, DictCategory.Element))
-        self.assertTrue(not isinstance(dict, DictCategory.Element))
+        self.assertIsInstance({}, DictCategory.Element)
+        self.assertNotIsInstance(dict, DictCategory.Element)
+        self.assertNotIsInstance('a', DictCategory.Element)
+
         self.assertTrue(issubclass(dict, DictCategory.Element))
         self.assertTrue(issubclass(DictCategory.Morphism, Morphism))
+        self.assertTrue(not issubclass(dict, DictCategory.Morphism))
 
         self.assertTrue(issubclass(DictCategory.Element, Element))
         self.assertTrue(issubclass(DictCategory, Category))
