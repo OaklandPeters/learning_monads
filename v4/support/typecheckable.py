@@ -1,9 +1,10 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractclassmethod
+
 
 class TypeCheckableMeta(ABCMeta):
     """Makes isinstance and issubclass overrideable."""
 
-    def __instancecheck__(cls, instance):        
+    def __instancecheck__(cls, instance):
         if any('__instancecheck__' in klass.__dict__ for klass in cls.__mro__):
             return cls.__instancecheck__(instance)
         else:
@@ -14,6 +15,16 @@ class TypeCheckableMeta(ABCMeta):
             return cls.__subclasscheck__(subclass)
         else:
             return type.__subclasscheck__(cls, subclass)
+
+
+class TypeCheckable(metaclass=TypeCheckableMeta):
+    @abstractclassmethod
+    def __instancecheck__(cls, instance):
+        return NotImplemented
+
+    @abstractclassmethod
+    def __subclasscheck__(cls, subclass):
+        return NotImplemented
 
 
 def type_check(value, *klasses, name='object'):
