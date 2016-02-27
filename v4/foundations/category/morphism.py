@@ -37,21 +37,48 @@ class ListFunctor(Functor):
         return [function(value) for value in element]
 """
 from abc import abstractclassmethod
+from collections import Callable
 
 from ...support.methods import pedanticmethod, abstractpedanticmethod, abstractclassproperty
-from ...support.typecheckable import TypeCheckableMeta
+from ...support.typecheckable import TypeCheckableMeta, TypeCheckable
 
 
-class Morphism(metaclass=TypeCheckableMeta):
-    def __init__(self, function):
-        self.function = function
+
+class Morphism(Callable, TypeCheckable, metaclass=TypeCheckableMeta):
+    """
+    Morphism needs to be able to typecheck.
+
+    Note: because of the category laws, the Morphisms in a Category
+    forms a Monoid.
+
+    Because the Morphism should typecheck, this will likely need to override
+    __instancecheck__ and __subclasscheck__
+
+    Note: many Categories, and hence their Morphism/Elements do not correspond to directly instantiatable classes (the category might be closer to an interface or dependent type). hence, in general, we will not have a __new__ method. Instead, the ability to construct Elements/Morphisms in a category comes from Functors mapping into that category.
+
+    Inherited abstract methods:
+        __call__
+        __instancecheck__
+        __subclasscheck__
+    """
+    @abstractpedanticmethod
+    def compose(cls, self: 'Morphism', other: 'Morphism') -> 'Morphism':
+        return NotImplemented
 
     @abstractclassproperty
-    def Category(cls):
+    def identity(cls) -> 'Morphism':
+        """Return the identity morphism for this category.
+        For various reasons, we are not making this a property."""
         return NotImplemented
 
     @abstractpedanticmethod
-    def apply(cls, function, element):
-        """
-        For monads, constructing this is almost definitional
-        """
+    def call(cls, self: 'Morphism', element: 'Element') -> 'Element':
+        """Can't be written automatically, because it would depend on the way
+        that the functinos are stored inside the Morphism class."""
+        return NotImplemented
+
+    def __call__(self, element: 'Element') -> 'Element':
+        return self.call(element)
+
+    def __rshift__(self, morphism: 'Morphism') -> 'Morphism':
+        return self.compose(morphism)
