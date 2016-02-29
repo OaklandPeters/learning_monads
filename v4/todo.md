@@ -1,3 +1,11 @@
+Running Tests
+================
+learning_monads/ python3 -m unittest discover v4
+
+test_list_category.py
+    Several missing tests in categoryTestCase
+    abstraction of CategoryTestCase - phase out old structure
+
 
 Draft Build-targets
 ======================
@@ -5,7 +13,9 @@ Draft Build-targets
 ** Commit everything before major refactor
 ** remove foundations/category/category.py
 ** Example categories: list_category
-** Example categories: Any, List, str, pair
+*** Unittests: test of identity and composition
+*** Abstract some of the tests to work generically for a category, in terms of constructor functions for element and morphism
+** Example categories: Trivial, Any, List, str, pair
 * foundations/functor/functor.py
 ** example functors
 ** functor/__init__.py
