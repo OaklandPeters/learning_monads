@@ -28,17 +28,25 @@ class SimpleBaseMeta(TypeCheckableMeta):
 
     # Predefined type-checking proxies
     def __instancecheck__(cls, instance):
-        try:
-            return isinstance(instance, cls._instancechecker_data)
-        # Hack: to make this play well with typing module, Any, Union etc
-        except TypeError as exc:
-            if len(cls._instancechecker_data) == 1:
-                if isinstance(cls._instancechecker_data[0], TypingMeta):
-                    return issubclass(type(instance), cls._instancechecker_data)
-            raise
+        if hasattr(cls, '_instancechecker_data'):
+            try:
+                return isinstance(instance, cls._instancechecker_data)
+            # Hack: to make this play well with typing module, Any, Union etc
+            except TypeError:
+                if len(cls._instancechecker_data) == 1:
+                    if isinstance(cls._instancechecker_data[0], TypingMeta):
+                        return issubclass(type(instance), cls._instancechecker_data)
+                raise
+        else:
+            return TypeCheckableMeta.__instancecheck__(cls, instance)
 
     def __subclasscheck__(cls, subclass):
-        return issubclass(subclass, cls._subclasschecker_data)
+        if hasattr(cls, '_subclasschecker_data'):
+            # _subclasschecker_data = getattr(cls, '_subclasschecker_data', (cls, ))
+            # return issubclass(subclass, _subclasschecker_data)
+            return issubclass(subclass, cls._subclasschecker_data)
+        else:
+            return TypeCheckableMeta.__subclasscheck__(cls, subclass)
 
 
 class SimpleElementMixin(Element):
