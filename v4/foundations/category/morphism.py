@@ -40,7 +40,7 @@ from abc import abstractclassmethod
 from collections import Callable
 
 from ...support.methods import pedanticmethod, abstractpedanticmethod, abstractclassproperty
-from ...support.typecheckable import TypeCheckableMeta, TypeCheckable
+from ...support.typecheckable import TypeCheckableMeta, TypeCheckable, meets
 
 
 
@@ -82,3 +82,9 @@ class Morphism(Callable, TypeCheckable, metaclass=TypeCheckableMeta):
 
     def __rshift__(self, morphism: 'Morphism') -> 'Morphism':
         return self.compose(morphism)
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is Morphism:
+            return meets(C, cls.__abstractmethods__)
+        return NotImplemented

@@ -5,7 +5,7 @@ In category-theory, what is called the *objects* in a category, we are calling t
 Note - Python's 'object' class, actually forms the 'elements' for the category of all objects representable in Python (which I'm calling Pysk).
 """
 from ...support.methods import abstractpedanticmethod
-from ...support.typecheckable import TypeCheckableMeta, TypeCheckable
+from ...support.typecheckable import TypeCheckableMeta, TypeCheckable, meets
 
 from .basis import Applicative
 
@@ -19,3 +19,9 @@ class Element(Applicative, TypeCheckable, metaclass=TypeCheckableMeta):
     """
     def __rshift__(self, morphism: 'Morphism') -> 'Element':
         return self.apply(morphism)
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is Element:
+            return meets(C, cls.__abstractmethods__)
+        return NotImplemented
