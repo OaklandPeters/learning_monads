@@ -10,21 +10,30 @@ used as inspiration for better class structure:
 
 
 
-@todo: Determine whether I want this to look like a Sequence or a Mapping, and they inherit/rebuild from that.
-@todo: After practicing with this, determine if it needs .deterministic() and .pairs()
+@todo: Write way to take union at the class level
+
+TODO:
+Look for examples of pathelogical strings, drawn from various languages
+    SQL
+    Python
+    Javascript
+
+
+
+TODO: ADVANCED: Edge cases which should fail. For example: for float - passing in integers
 """
 import typing
 import random
 from abc import abstractmethod, ABCMeta, abstractproperty
 import collections
-
 import sys
+import math
 
 import string
 import unicodedata
 import unittest
 
-from .typecheckable import meets
+from .typecheckable import type_check_sequence
 
 maxint = sys.maxsize
 
@@ -34,7 +43,7 @@ Index = typing.TypeVar('Index')
 Pair = typing.Tuple[Index, Inner]
 
 
-class RandGenInterface(collections.abc.Sequence, typing.Generics[Index, Inner], metaclass=ABCMeta):
+class RandGenInterface(collections.abc.Sequence, typing.Generic[Index, Inner], metaclass=ABCMeta):
     """
     Built assuming possible data values stored in an internal sequence.
     This is not a Sequence. Although it wraps linear (Sequence) data,
@@ -66,13 +75,13 @@ class RandGenInterface(collections.abc.Sequence, typing.Generics[Index, Inner], 
     #
     # Semi-derived methods:
     #   These are implied by the __init__ method
-    @abstractproperty
-    def seed(self) -> int:
-        return NotImplemented
+    #@abstractproperty
+    #def seed(self) -> int:
+    #    return NotImplemented
 
-    @abstractproperty
-    def Random(self) -> random.Random:
-        return NotImplemented
+    #@abstractproperty
+    #def Random(self) -> random.Random:
+    #    return NotImplemented
 
     #
     # Derived methods
@@ -81,14 +90,14 @@ class RandGenInterface(collections.abc.Sequence, typing.Generics[Index, Inner], 
         for index in self.indices():
             yield self[index]
 
-    def deterministic(self) -> typing.Iterator[Pairs]:
-        for index in self.indices():
-            yield (index, self[index])
+    #def deterministic(self) -> typing.Iterator[Pairs]:
+    #    for index in self.indices():
+    #        yield (index, self[index])
 
-    def pairs(self) -> typing.Sequence[Pairs]:
-        if not hasattr(self, '_pairs'):
-            self._pairs = tuple(self.deterministic())
-        return self._pairs
+    #def pairs(self) -> typing.Sequence[Pairs]:
+    #    if not hasattr(self, '_pairs'):
+    #        self._pairs = tuple(self.deterministic())
+    #    return self._pairs
 
     def __len__(self):
         return len(self.indices())
@@ -117,7 +126,7 @@ class RandGenInterface(collections.abc.Sequence, typing.Generics[Index, Inner], 
             yield (index, self[index])
 
 
-class RandAtomic(RandGenInterface[int, Inner]):
+class RandAtomics(RandGenInterface[int, Inner]):
     """Refined convenience abstract class.
     Requires only a single abstract *property*: _values
     Which is usually implemented at the class level
@@ -128,26 +137,27 @@ class RandAtomic(RandGenInterface[int, Inner]):
 
     # Mixin methods
     def __init__(self, seed=None):
-        super().__init__(self, seed=seed)
+        self.seed = seed
+        self.Random = random.Random(self.seed)
+        #super().__init__(self, seed=seed)
 
     def values(self):
         return self._values
 
     def indices(self):
-        return tuple(range(len(self.data)))
+        return tuple(range(len(self.values())))
 
     def __getitem__(self, index):
         return self._values[index]
 
     def __repr__(self):
-        return str.format(
-            "{0}:({1})", self.__class__.__name__
-        )
+        return "<{0}>".format(self.__class__.__name__)
 
 
-IndexPair = typing.Tuple[int, int]
+Index2D = typing.Tuple[int, int]
 
-class RandUnion(RandGenInterface[IndexPair, Inner]):
+
+class RandUnion(RandGenInterface[Index2D, Inner]):
     """
     Two possible forms of randomization
         Uniform in groups
@@ -183,7 +193,7 @@ class RandUnion(RandGenInterface[IndexPair, Inner]):
 #
 # ==========================================
 
-class RandInteger(RandAtomic):
+class RandIntegers(RandAtomics[int, int]):
     """
     2147483647: largest 32-bit prime number, the 8th Merseine prime number
     """
@@ -199,7 +209,47 @@ class RandInteger(RandAtomic):
         sys.maxsize,
     )
 
-class RandString(RandAtomic):
+class RandFloats(RandAtomics[int, float]):
+    _values = (
+        -1e309,  # inf
+        -1e308,
+        -float(sys.maxsize),  # float equivalent of maximum int
+        -2147483647.0,
+        -math.pi,
+        -math.exp(1),
+        -2.0,
+        -1.0,
+        -1.0/1e308,  # greatest number less than zero
+        -1.0/1e309,  # ~ 0
+        0.0,
+        1.0/1e309,  # rounded to zero
+        1.0/1e308,  # smallest number less than zero
+        1.0,
+        2.0,
+        math.exp(1),
+        math.pi,
+        2147483647.0,
+        float(sys.maxsize),
+        1e308,
+        1e309,  # should be inf
+    )
+
+class RandBools(RandAtomics[int, bool]):
+    _values = (True, False)
+
+class RandTruthy(RandAtomics[int, typing.Any]):
+    _values = (
+        True, "x", (12, ), [False], {None: None}, 
+    )
+
+class RandFalsy(RandAtomics[int, typing.Any]):
+    _values = (
+        False, str(), tuple(), list(), dict(), None
+    )
+
+
+
+class RandStrings(RandAtomics[int, str]):
     """
     Random string, drawn from all valid unicode letters.
     """
@@ -208,14 +258,51 @@ class RandString(RandAtomic):
         for i in range(sys.maxunicode)
         if unicodedata.category(chr(i)).startswith('L')
     ]
+
     @classmethod
     def rand(cls, maxlength=80):
         randlength = random.randrange(0, maxlength)
         return u''.join([random.choice(cls.alphabet) for _ in range(randlength)])
 
+    @property
+    def _values(self):
+        return (
+            "",
+            # Quotes in quotes in quotes
+            "'", "''",
+            '\"', '\\"', '""', '\"\"', '\\"\\"',
+            "\\", "\\\\",
+            "\'", "\'\'", "\\'", "\\'\\'", "\\\'",
+            "\"", "\"\"", "\\\"","\\\"\\\"", "\\\\",
+            "\a", "\\\a",  # ASCII Bell
+            "\b", "\\\b",  # ASCII Backslash
+            "\f", "\\\f",  # ASCII Formfeed
+            "\n", "\\\n",  # ASCII Linefeed
+            "\r", "\\\r",  # ASCII Carriage Return
+            "\v", "\\\v",  # ASCII Vertical Tab
+            "\t", "\\\t",  # Tab
+            # Little Bobby Tables: https://xkcd.com/327/
+            "Robert'); DROP TABLE Students;--",
+            "eval(\"print(\'Hello\')\")",
+            "eval(\"raise Exception()\")",
+            'eval("eval(\"eval(\\\"3\\\")\")")',
+            self.rand(), self.rand(), self.rand(), self.rand(), self.rand(),
+            self.rand(), self.rand(), self.rand(), self.rand(), self.rand(),
+            self.rand(), self.rand(), self.rand(), self.rand(), self.rand(),
+        )
 
 
-class RandList(RandAtomic):
+class RandPoliteStrings(RandString):
+    """
+    Random string from characters considered to be printable
+    (by the string module). This includes digits, upper and lowercase
+    letters, punctuation, and whitespace.
+    """
+    alphabet = string.printable
+
+
+
+class RandLists(RandAtomics[int, list]):
     _values = (
         [],
         ['x'],
@@ -231,52 +318,12 @@ class RandList(RandAtomic):
 
 
 
-class PoliteString(String):
-    """
-    Random string from characters considered to be printable (by the string module). This includes digits, upper and lowercase letters, punctuation, and whitespace.
-    """
-    #String of characters which are considered printable. This is a combination of digits, letters, punctuation, and whitespace.
-    alphabet = string.printable
+rs = RandString()
 
 
-
-
-
-
-    
-class TestSupportBase(unittest.TestCase):
-    klass = NotImplemented  # abstract
-    def grab(self, N=10):
-        for i in range(N):
-            yield self.klass()
-
-
-class IRandTestSupport:
-    def test_irand(self):
-        iterator = self.klass.irand()
-        for i in range(10):
-            instance = next(iterator)
-            self.assertTrue(isinstance(instance, self.klass))
-            
-
-class StringTests(IRandTestSupport, TestSupportBase):
-    klass = String
-    def test_string_parent(self):
-        for instance in self.grab():
-            self.assertTrue(isinstance(instance, str))
-
-
-class PoliteStringTests(StringTests):
-    klass = PoliteString
-
-class IntegerTests(IRandTestSupport, TestSupportBase):
-    klass = Integer
-    def test_int_parent(self):
-        for instance in self.grab():
-            self.assertTrue(isinstance(instance, int))
-
-class PositiveIntegerTests(IntegerTests, TestSupportBase):
-    klass = PositiveInteger
-    def test_positive(self):
-        for instance in self.grab():
-            self.assertTrue(instance > 0)
+print()
+print("rs:", type(rs), rs)
+print()
+import ipdb
+ipdb.set_trace()
+print()
