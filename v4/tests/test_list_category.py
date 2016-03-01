@@ -2,6 +2,7 @@ import unittest
 import abc
 import collections
 
+
 from v4.foundations.category.category import Category, Morphism, Element
 from v4.foundations.category.list_category import (
     ListElement, ListMorphism, ListCategory,
@@ -60,9 +61,21 @@ class CategoryTestCase(metaclass=abc.ABCMeta):
         pass
 
 
-class ListCategoryPropertiesTestCase(CategoryTestCase):
+class ListCategoryPropertiesTestCase(CategoryTestCase, unittest.TestCase):
 
     Category = ListCategory
+
+    _elements = (
+        [],
+        ['x'],
+        [[]],
+        [1],
+        [[[]]],
+        ['x', []],
+        [[]]*10000  # obnoxiously huge list
+    )
+    def make_element(self):
+        ri = 
 
 
 class ListCategoryTestCase(unittest.TestCase):
