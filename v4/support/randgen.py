@@ -21,6 +21,26 @@ Look for examples of pathelogical strings, drawn from various languages
 
 
 TODO: ADVANCED: Edge cases which should fail. For example: for float - passing in integers
+
+
+Future-ideas
+----------------
+* Strings in various encodings.
+* Common structured data: XML, JSON, HTML, CSV
+* Serialized data,as string - of the structured data types.
+* File serialization: txt, json, html, xml, csv
+** Especially, see the way this would interact with mal-formed
+* 'MalformedX' - data which is not technically correct version of X, but you
+tend to encounter anyway. Slightly misformed. Especially for structured data.
+** Subclass: where possible, construct a subclass, and feed it through.
+** Duck-typing: for dict/list/tuple - Mapping, MutableMapping, Sequence, MutableSequence
+** For strings: Strings in incorrect encodings. bytes. Py2 - str/unicode.
+** For numbers: different data-types (float, complex)
+** For structured data types: slightly incorrect encodings.
+*** For HTML: incorrectly structured data, which most browsers accept anyway
+** For everything: None
+** For everything: the class-variable, rather than an instance
+* Web communication: various calls: request, ajax. Honestly not sure what this would look like.
 """
 import typing
 import random
@@ -292,7 +312,7 @@ class RandStrings(RandAtomics[int, str]):
         )
 
 
-class RandPoliteStrings(RandString):
+class RandPoliteStrings(RandStrings):
     """
     Random string from characters considered to be printable
     (by the string module). This includes digits, upper and lowercase
