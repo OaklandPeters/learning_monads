@@ -20,7 +20,7 @@ INTERMEDIATE:
 * Handling Monadic.__rshift__ - when passed an object from a different monad
 * Rewrite Pipe and Maybe to be function-sequences, and write a reduce on that.
 ** I think, this reduction is 'compose'
-* Rewrite: using Element/Morphism, as shown in hierarchy.py. Will cut down on the number of disptaches, and make Element not express a __call__ function.
+* Rewrite: using Element/Morphism, as shown in hierarchy.py. Will need to support typechecking with __isinstance__ (not just __subclasshook__). Will cut down on the number of disptaches, and make Element not express a __call__ function.
 ** Ideally, express this only at level of 'Monadic' sugar methods. IE the only replacement will be Monadic-->MonadicElement,MonadicMorphism + changing what is returned by the __new__ method
 * Write PyskElement and PyskMorphism
 * Write instance-level __instancecheck__ mechanisms, and connect to PyskMorphism
