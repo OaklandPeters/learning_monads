@@ -7,10 +7,10 @@ import abc
 import typing
 
 from .methods import abstractpedanticmethod, pedanticmethod, abstractclassproperty
-from .interfaces import Pysk, Monad, Category
+from .interfaces import Pysk, Monad, Category, CategoryMeta
 
 
-class Element(metaclass=abc.ABCMeta):
+class Element(metaclass=CategoryMeta):
     @abstractclassproperty
     def Category(cls):
         return NotImplemented
@@ -29,7 +29,7 @@ class MonoidalElement(Element):
         return NotImplemented
 
 
-class Morphism(metaclass=abc.ABCMeta):
+class Morphism(metaclass=CategoryMeta):
     @abstractclassproperty
     def Category(cls):
         return NotImplemented

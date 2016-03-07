@@ -1,8 +1,34 @@
 import typing
 import functools
 
-from .interfaces import Category
+from .interfaces import Category, Element, Morphism
 from .methods import classproperty, pedanticmethod
+
+
+class PyskElement(Element):
+    @pedanticmethod
+    def apply(cls, self: 'cls.Element', function: 'cls.Morphism') -> 'cls.Element':
+        return cls.Category.apply(self, function)
+
+    @classmethod
+    def is_convertiable(obj):
+        return isinstance(obj, object)
+
+
+class PyskMorphism(Morphism):
+    @pedanticmethod
+    def compose(cls, self: 'cls.Morphism', function: 'cls.Morphism'):
+        return cls.Category.compose(self, function)
+
+    @pedanticmethod
+    def call(cls, self: 'cls.Morphism', element: 'cls.Element') -> 'cls.Element':
+        return cls.Category.call(self, element)
+
+    @classmethod
+    def is_convertible(cls, obj):
+        """This should really check whether this is Callabe from a single positional argument,
+        but that isn't checkable at the moment."""
+        return callable(obj)
 
 
 class Pysk(Category):
@@ -44,6 +70,9 @@ class Pysk(Category):
             self.__class__.__name__,
             repr(self.__dict__))
 
+    Morphism = PyskMorphism
+    Element = PyskElement
+
     @pedanticmethod
     def is_element(cls, obj):
         return True
@@ -55,6 +84,10 @@ class Pysk(Category):
     @classproperty
     def Object(cls):
         return typing.Union[cls.Element, cls.Morphism]
+
+
+PyskElement.Category = Pysk
+PyskMorphism.Category = Pysk
 
 
 # Internal utility functions
