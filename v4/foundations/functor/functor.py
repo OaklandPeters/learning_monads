@@ -55,6 +55,23 @@ class Functor(Decorator, Constructor, Applicative):
         return cls.decorate(function)(element)
 
 
+class FunctorCategory(Functor, Category):
+    """
+    A category, equipped with a canonical set of constructors/decorators.
+    Classes in OOP langauges are often written this way.
+
+    In practical terms, this allows the Category define __init__/__new__ behavior for the
+    category as reasonable defaults, while still allowing alternate constructors to exist
+    (such as when mapping from a different Category).
+
+    For the OOP approach, the Functor almost always maps: 
+
+    Note: Monads will generally be written as FunctorCategories + extra structure.
+    """
+
+
+
+
 # ======================================
 #  Inheritance patterns/mixin-routes
 # ======================================
