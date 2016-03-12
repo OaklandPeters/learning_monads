@@ -1,3 +1,7 @@
+"""
+@todo: Make GenericFunction be able to be overriden by being called multiple times.
+"""
+
 import functools
 
 from .pysk import Pysk
