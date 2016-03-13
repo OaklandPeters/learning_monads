@@ -37,6 +37,14 @@ class TypeCheckable(metaclass=TypeCheckableMeta):
         return NotImplemented
 
 
+class Interface(metaclass=TypeCheckableMeta):
+    """Predefines __subclasshook__ to check abstractmethods
+    """
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return meets_interface(subclass, cls)
+
+
 def meets(klass: 'type', abstracts: 'Union[Sequence[str]]'):
     return not missing_abstracts(klass, abstracts)
 

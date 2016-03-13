@@ -75,7 +75,8 @@ class ListCategoryPropertiesTestCase(CategoryTestCase, unittest.TestCase):
         [[]]*10000  # obnoxiously huge list
     )
     def make_element(self):
-        ri = 
+        pass
+        # ri = []
 
 
 class ListCategoryTestCase(unittest.TestCase):
