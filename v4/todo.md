@@ -7,26 +7,29 @@ test_list_category.py
     abstraction of CategoryTestCase - phase out old structure
 
 
-Draft Build-targets
-======================
-* foundations/category:
-** Commit everything before major refactor
-** remove foundations/category/category.py
-** Example categories: list_category
-*** Unittests: test of identity and composition
-*** Abstract some of the tests to work generically for a category, in terms of constructor functions for element and morphism
-** Example categories: Trivial, Any, List, str, pair
+Immediate-Term
+==================
+I've gotten side-tracked. To refocus on productivity:
 
-* [high] Remove one of conflicting definitions: Functor.apply is defined differently in foundations/functor.Functor.apply, than it is in category/element.Element.apply. For element, I've defined it as something like the conjugate of call (apply::(Element, Morphism) -> Element), while in Functor it is used as in Haskell's Applicative typeclass (apply::(Codomain.Morphism, Codomain.Element)->Codomain.Element) 
-* foundations/functor/functor.py
-** example functors
-** functor/__init__.py
-** unittests for examples
+1. [high] Abstract parts of foundations/category/ into space.py: Element, Morphism, Space.Element, Space.Morphism, .call, .apply
+
+2. Return to MAybe in v5, and write an Arrow instance + Sugar, capable of expressing this:
+    Maybe(f) >> g >> h << x == maybe(f, maybe(g, h))(x)
+
+3. Use (2) inside the image-downloader example, and confirm it works.
+
+4. Combine the new material from v5 into v4:
+4.1. [IMPORTANT] The Chain/Pipe category - especially from metafuncs.py
+4.1. metafunctions: generic_functions, wrapper_functions.py
+4.2. The clean distinctions in heirarchy.py (functor/cofunctor/monad/comonad)
+4.3. Pysk - the category
+4.4. Maybe + unittests
+4.5. The new version of functor is better than the old version (the old version uses apply differently than I would want). Old uses it like 'Applicative', and new uses it like, 'call within the category of the element on the left'
 
 
 Short-Term
 ===============
-* [med] Decide if this is a useful distinction to make: in the context of functors, draw the following distinction - (1) morphisms in the codomain (C.a->C.b), vs (2) F(D.a->D.b) ~= (C.a -> C.b) morphisms which are the result of mapping a morphism from the domain D into codomain C via morphism F. In this construction, this might be represented via a FunctorCategory, which is a subcategory ~ subclass of the codomain C.
+* [high] Sugar. CategorySugar: MorphismSugar, ElementSugar. FunctorCategorySugar/MonadSugar
 * [high] Should SimpleMorphism/SimpleElement inherit from the base they are given?
 * [high] Hard question: should list be considered a virtual subclass of ListElement?
 * [med] Maybe - have constructor for StandardCategory establish links upward for Element.Category = NewCategory, Morphism.Category=NewCategory
