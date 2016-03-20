@@ -47,9 +47,6 @@ class Applicative:
 class Functor(Decorator, Constructor, Applicative):
     """Functor.
     """
-
-
-
     @classmethod
     def apply(cls, function: 'Domain.Morphism', element: 'Codomain.Element') -> 'Codomain.Morphism':
         return cls.decorate(function)(element)
