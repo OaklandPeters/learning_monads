@@ -2,16 +2,17 @@
 """
 import typing
 
-from ..support.methods import abstractpedanticmethod
+from ..support.typecheckable import meets_interface
 
 from .category import Category
 from .decomposable import Decomposable
 
 
-GroupoidMorphism_TV = typing.TypeVar('GroupoidMorphism_TV')
+Morphism = typing.TypeVar('Morphism')
 
 
-class Groupoid(Category[GroupoidMorphism_TV], Decomposable[GroupoidMorphism_TV]):
+class Groupoid(Category[Morphism],
+               Decomposable[Morphism]):
     """A category where composed functions can be decomposed.
 
     X1 = compose(f1, g1)
@@ -30,4 +31,8 @@ class Groupoid(Category[GroupoidMorphism_TV], Decomposable[GroupoidMorphism_TV])
     In Python terms, we won't generally be able to do:
         X1.__eq__(X3)
     """
-    pass
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Groupoid:
+            return meets_interface(subclass, Groupoid)
+        return NotImplemented

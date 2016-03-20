@@ -2,20 +2,24 @@
 """
 import typing
 
-from ..support.typecheckable import TypeCheckableMeta
-from ..support.methods import abstractpedanticmethod
+from ..support.typecheckable import meets_interface
 
 from .zeroable import Zeroable
-from .semigroup import SemiGroup
+from .Appendable import Appendable
 
 
-MonoidElement_TV = typing.TypeVar('MonoidElement')
+Element = typing.TypeVar('MonoidElement')
 
 
-class Monoid(SemiGroup[MonoidElement_TV], Zeroable[MonoidElement_TV]):
+class Monoid(Appendable[Element],
+             Zeroable[Element]):
     """
     Abstractmethods:
         append
         zero
     """
-    pass
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Monoid:
+            return meets_interface(subclass, Monoid)
+        return NotImplemented

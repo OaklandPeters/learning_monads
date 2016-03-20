@@ -2,14 +2,17 @@
 """
 import typing
 
+from ..support.typecheckable import meets_interface
+
 from .monoid import Monoid
-from .splitable import Splitable
+from .splitable import Splittable
 
 
-GroupElement_TV = typing.TypeVar('GroupElement_TV')
+Element = typing.TypeVar('Element')
 
 
-class Group(Monoid[GroupElement_TV], Splitable[GroupElement_TV]):
+class Group(Monoid[Element],
+            Splittable[Element]):
     """A category where append functions can be inverted.
 
     X1 = append(f1, g1)
@@ -24,4 +27,8 @@ class Group(Monoid[GroupElement_TV], Splitable[GroupElement_TV]):
     g1 == g2
 
     """
-    pass
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Group:
+            return meets_interface(subclass, Group)
+        return NotImplemented
