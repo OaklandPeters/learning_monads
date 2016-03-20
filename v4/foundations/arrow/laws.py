@@ -68,23 +68,78 @@ class ArrowLawTests(ArrowTestSupportMixin):
         """
         Third Law: first (arr f) = arr (first f)
         """
+        # Suspect this assumes f is already in a different arrow
+        self.assert_function_equality(
+            self.arrow.first(self.arrow.arr(f)),
+            self.arrow.arr(self.arrow.first(f))
+        )
 
     def test_distributivity_of_composition_over_first(self):
         """
         Fourth law: first (f >>> g) = first f >>> first g
         """
+        self.assert_function_equality(
+            self.arrow.first(self.arrow.compose(f, g)),
+            self.arrow.compose(
+                self.arrow.first(f),
+                self.arrow.first(g)
+            )
+        )
 
     def test_(self):
         """
         Fifth law: first f >>> arr fst = arr fst >>> f
+        
+        ... no idea what fst is 
         """
+        self.assert_function_equality(
+            self.arrow.compose(
+                self.arrow.first(f),
+                self.arrow.arr(fst)
+            ),
+            self.arrow.compose(
+                self.arrow.arr(fst),
+                f
+            )
+        )
 
     def test_(self):
         """
         Sixth Law: first f >>> arr (id *** g) = arr (id *** g) >>> first f
         """
+        self.assert_function_equality(
+            self.arrow.compose(
+                self.arrow.first(f),
+                self.arrow.arr(
+                    self.arrow.split(
+                        self.arrow.identity,
+                        g
+                    )
+                )
+            ),
+            self.arrow.compose(
+                self.arrow.arr(
+                    self.arrow.split(
+                        self.arrow.identity,
+                        g
+                    )
+                ),
+                self.arrow.first(f)
+            )
+        )
 
     def test_(self):
         """
         Seventh Law: first (first f) >>> arr assoc = arr assoc >>> first f
         """
+        self.assert_function_equality(
+            self.arrow.compose(
+                self.arrow.first(self.arrow.first(f)),
+                self.arrow.arr(assoc)
+            ),
+            self.arrow.compose(
+                self.arrow.arr(assoc),
+                self.arrow.first(f)
+            )
+            ,
+        )
