@@ -1,3 +1,15 @@
+"""
+To make a valid ABC interface, which can be used to do structural-type checking,
+you need to add the following to that class (even for aggregate multi-base ABCs)
+
+class X:
+    # ...
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is X:
+            return meets_interface(subclass, X)
+        return NotImplemented
+"""
 from abc import ABCMeta, abstractclassmethod
 
 
@@ -35,14 +47,6 @@ class TypeCheckable(metaclass=TypeCheckableMeta):
     @abstractclassmethod
     def __subclasscheck__(cls, subclass):
         return NotImplemented
-
-
-class Interface(metaclass=TypeCheckableMeta):
-    """Predefines __subclasshook__ to check abstractmethods
-    """
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return meets_interface(subclass, cls)
 
 
 def meets(klass: 'type', abstracts: 'Union[Sequence[str]]'):
