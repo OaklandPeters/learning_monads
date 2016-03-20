@@ -1,17 +1,10 @@
-Running Tests
-================
-learning_monads/ python3 -m unittest discover v4
-
-test_list_category.py
-    Several missing tests in categoryTestCase
-    abstraction of CategoryTestCase - phase out old structure
-
-
 Immediate-Term
 ==================
 I've gotten side-tracked. To refocus on productivity:
 
-1. [high] Abstract parts of foundations/category/ into space.py: Element, Morphism, Space.Element, Space.Morphism, .call, .apply
+0.1 [high] Confirm that multiple inheritance of basis ABCs works correctly. I can use this opportunity to stub test_groups.py
+
+1. [high] Abstract parts of foundations/category/ into space.py: Element, Morphism, Space.Element, Space.Morphism, .call, .apply. The goal is to disolve category/ the folder into space/ and groups/. Then have a categories/ folder for implementations and simple.py
 
 2. Return to MAybe in v5, and write an Arrow instance + Sugar, capable of expressing this:
     Maybe(f) >> g >> h << x == maybe(f, maybe(g, h))(x)
