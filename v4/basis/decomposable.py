@@ -7,7 +7,8 @@ from ..support.methods import abstractpedanticmethod
 Morphism_TV = typing.TypeVar('Morphism_TV')
 
 
-class Decomposable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+# class Decomposable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+class Decomposable(metaclass=TypeCheckableMeta):
     """
     decompose is nearly always used as the inversion of compose
     """

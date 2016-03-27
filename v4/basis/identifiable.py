@@ -7,7 +7,8 @@ from ..support.methods import abstractclassproperty
 Morphism_TV = typing.TypeVar('Morphism_TV')
 
 
-class Identifiable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+# class Identifiable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+class Identifiable(metaclass=TypeCheckableMeta):
     """In most cases, this indicates a container that can be 'empty'."""
     @abstractclassproperty
     def identity(cls) -> Morphism_TV:

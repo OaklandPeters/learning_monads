@@ -8,7 +8,8 @@ Element_TV = typing.TypeVar('Element_TV')
 Morphism_TV = typing.TypeVar('Morphism_TV')
 
 
-class Applicative(typing.Generic[Element_TV, Morphism_TV], metaclass=TypeCheckableMeta):
+# class Applicative(typing.Generic[Element_TV, Morphism_TV], metaclass=TypeCheckableMeta):
+class Applicative(metaclass=TypeCheckableMeta):
     @abstractpedanticmethod
     def apply(cls, element: Element_TV, morphism: Morphism_TV) -> Element_TV:
         return NotImplemented

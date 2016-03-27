@@ -7,7 +7,8 @@ from ..support.methods import abstractpedanticmethod
 Element_TV = typing.TypeVar('Element_TV')
 
 
-class Appendable(typing.Generic[Element_TV], metaclass=TypeCheckableMeta):
+# class Appendable(typing.Generic[Element_TV], metaclass=TypeCheckableMeta):
+class Appendable(metaclass=TypeCheckableMeta):
     """
     Binary function which is total in the elements of the space.
     What this means is that it can operate on any two elements defined

@@ -7,7 +7,8 @@ from ..support.methods import abstractpedanticmethod
 Morphism_TV = typing.TypeVar('Morphism_TV')
 
 
-class Composable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+# class Composable(typing.Generic[Morphism_TV], metaclass=TypeCheckableMeta):
+class Composable(metaclass=TypeCheckableMeta):
     """
     Non-total binary function on morphisms in the space. In this case, non-total
     means that not every two morphisms can be meaningfully composed (IE their

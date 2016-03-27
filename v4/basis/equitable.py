@@ -1,7 +1,7 @@
-from ...support.typecheckable import Interface
+from ...support.typecheckable import TypeCheckableMeta
 
 
-class Equitable(Interface):
+class Equitable(metaclass=TypeCheckableMeta):
     """
     Almost all classes will inherit __eq__ from 'object', but many should
     actually override this anyway.

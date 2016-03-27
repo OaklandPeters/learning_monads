@@ -6,15 +6,18 @@ import typing
 
 from ..support.typecheckable import meets_interface
 
-from .identifiable import Identifiable
-from .composable import Composable
+from ..basis.identifiable import Identifiable
+from ..basis.composable import Composable
+from ..foundations.space.space import Space
 
 
 Morphism = typing.TypeVar('Morphism')
 
 
-class Category(Composable[Morphism],
-               Identifiable[Morphism]):
+# Removing Generic types, until I can get that to work with metaclass=TypeCheckableMeta
+# class Category(Composable[Morphism],
+#                Identifiable[Morphism]):
+class Category(Composable, Identifiable, Space):
     """
     The primary object we will work with - after we equip it with four more
     attributes:

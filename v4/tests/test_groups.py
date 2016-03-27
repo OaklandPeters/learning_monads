@@ -37,11 +37,6 @@ class Pysk(Category):
 
 class GroupsTestCase(unittest.TestCase):
     def test_category(self):
-
-        print()
-        print("issubclass(Pysk, Category):", type(issubclass(Pysk, Category)), issubclass(Pysk, Category))
-        print()
-        import ipdb
-        ipdb.set_trace()
-        print()
-        
+        self.assertTrue(issubclass(Pysk, Category))
+        self.assertFalse(issubclass(int, Category))
+        self.assertFalse(issubclass(Category, Pysk))

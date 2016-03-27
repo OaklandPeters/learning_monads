@@ -7,7 +7,8 @@ from ..support.methods import abstractpedanticmethod
 Element_TV = typing.TypeVar('Element_TV')
 
 
-class Splittable(typing.Generic[Element_TV], metaclass=TypeCheckableMeta):
+# class Splittable(typing.Generic[Element_TV], metaclass=TypeCheckableMeta):
+class Splittable(metaclass=TypeCheckableMeta):
     """
     split is nearly always used as the inversion of compose
     """

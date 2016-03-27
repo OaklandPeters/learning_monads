@@ -11,6 +11,7 @@ class X:
         return NotImplemented
 """
 from abc import ABCMeta, abstractclassmethod
+from typing import TypingMeta
 
 
 def _has_concrete_method(cls, name):
