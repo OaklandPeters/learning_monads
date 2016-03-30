@@ -2,10 +2,6 @@ Immediate-Term
 ==================
 I've gotten side-tracked. To refocus on productivity:
 
-0.1 [high] Confirm that multiple inheritance of basis ABCs works correctly. I can use this opportunity to stub test_groups.py
-
-1. [high] Abstract parts of foundations/category/ into space.py: Element, Morphism, Space.Element, Space.Morphism, .call, .apply. The goal is to disolve category/ the folder into space/ and groups/. Then have a categories/ folder for implementations and simple.py
-
 2. Return to MAybe in v5, and write an Arrow instance + Sugar, capable of expressing this:
     Maybe(f) >> g >> h << x == maybe(f, maybe(g, h))(x)
 
@@ -18,6 +14,10 @@ I've gotten side-tracked. To refocus on productivity:
 4.3. Pysk - the category
 4.4. Maybe + unittests
 4.5. The new version of functor is better than the old version (the old version uses apply differently than I would want). Old uses it like 'Applicative', and new uses it like, 'call within the category of the element on the left'
+
+5. Unit-tests for rax: test/ _test_maybe.py _test_underscore.py, _test_aggregate.py
+
+5. Concrete implemntations to make the unittests run: Pysk, Pipe, Maybe, Underscore, Aggregate
 
 
 Short-Term

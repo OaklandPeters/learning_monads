@@ -1,14 +1,13 @@
 import unittest
 import abc
 import collections
-
+import random
 
 from v4.foundations.category.category import Category, Morphism, Element
 from v4.foundations.category.list_category import (
     ListElement, ListMorphism, ListCategory,
     SimpleListElement, SimpleListMorphism, SimpleListCategory
 )
-
 
 
 class CategoryTestCase(metaclass=abc.ABCMeta):
@@ -21,9 +20,9 @@ class CategoryTestCase(metaclass=abc.ABCMeta):
     make_morphism = abc.abstractmethod(lambda self, seed=None: NotImplemented)
 
     def test_base_classes(self):
+        self.assertTrue(issubclass(self.Category.Element, Element))
         self.assertTrue(issubclass(self.Category, Category))
         self.assertTrue(issubclass(self.Category, Element))
-        self.assertTrue(issubclass(self.Category.Element, Element))
         self.assertTrue(issubclass)
 
     def test_element_instance(self):
@@ -72,12 +71,21 @@ class ListCategoryPropertiesTestCase(CategoryTestCase, unittest.TestCase):
         [1],
         [[[]]],
         ['x', []],
-        [[]]*10000  # obnoxiously huge list
+        [[]]*10000,  # obnoxiously huge list
+        ['1', 1, None, '', 0, (,)],
     )
-    def make_element(self):
-        pass
-        # ri = []
 
+    _morphisms = (
+        lambda _list: _list
+        lambda _list: [elm for elm in _list if isinstance(elm, str)]
+
+    )
+
+    def make_element(self):
+        return random.choice(self._elements)
+
+    def make_morphism(self):
+        return random.choice(self._morphisms)
 
 class ListCategoryTestCase(unittest.TestCase):
 
