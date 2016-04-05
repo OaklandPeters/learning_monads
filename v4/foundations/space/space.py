@@ -1,9 +1,7 @@
 from collections import Callable
 
-
 from ...support.typecheckable import TypeCheckableMeta
 from ...support.methods import pedanticmethod, abstractpedanticmethod, abstractclassproperty
-
 
 
 class Morphism(Callable, metaclass=TypeCheckableMeta):
@@ -18,7 +16,9 @@ class MorphismSugar(Morphism):
 
 
 class Element(metaclass=TypeCheckableMeta):
-    pass
+    @abstractpedanticmethod
+    def apply(cls, self: 'Element', morphism: 'Morphism') -> 'Morphism':
+        return NotImplemented
 
 
 class Space(metaclass=TypeCheckableMeta):
@@ -28,4 +28,12 @@ class Space(metaclass=TypeCheckableMeta):
 
     @abstractclassproperty
     def Morphism(cls):
+        return NotImplemented
+
+    @abstractclassmethod
+    def call(cls, morphism: 'Morphism', element: 'Element') -> 'Element':
+        return NotImplemented
+
+    @abstractclassmethod
+    def apply(cls, element: 'Element', morphism: 'Morphism') -> 'Morphism':
         return NotImplemented

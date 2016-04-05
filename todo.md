@@ -17,7 +17,13 @@ I've gotten side-tracked. To refocus on productivity:
 
 5. Unit-tests for rax: test/ _test_maybe.py _test_underscore.py, _test_aggregate.py
 
-5. Concrete implemntations to make the unittests run: Pysk, Pipe, Maybe, Underscore, Aggregate
+5. Concrete implemntations to make the unittests run: MonoPysk, Pysk, Pipe, Maybe, Underscore, Aggregate
+
+
+Structural Questions
+=======================
+* Should space.Element and space.Morphism maintain a link to their Space class? IOW - should each Element and Morphism correspond to exactly one Space? Subtle implication - MaybeSpace/MaybeCategory/MaybeFunctorCategory/MaybeMonad/MaybeArrow would all have different Element/Morphism classes - and this need to not be true.
+**		Potential solution: making MaybeElement/MaybeMorphsim not directly instantiatabe - instead used for typechecking / as an AbstractBaseClass. Thus, Maybe- -Space/-Category/-FunctorCategory/-Monad/-Arrow would essentialy have their own versions of Element/Morphism class, but they are not written out in the module file, nor are they used as the explicit class/constructor (in Python style). For example, MaybeCategory(), MaybeArrow(), could both be used as constructors, and would return things which are recognizable as MaybeElement or MaybeMorphism, but you can't use MaybeElement() or MaybeMorphism() as a constructor directly.
 
 
 Short-Term

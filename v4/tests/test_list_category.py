@@ -76,8 +76,8 @@ class ListCategoryPropertiesTestCase(CategoryTestCase, unittest.TestCase):
     )
 
     _morphisms = (
-        lambda _list: _list
-        lambda _list: [elm for elm in _list if isinstance(elm, str)]
+        lambda _list: _list,
+        lambda _list: [elm for elm in _list if isinstance(elm, str)],
 
     )
 
