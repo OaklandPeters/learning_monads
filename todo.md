@@ -28,6 +28,8 @@ Structural Questions
 
 Short-Term
 ===============
+* [high] Simplify /foundations/ structure, but removing nested folders. /space/space.py --> space.py etc
+* [high] Rewrite functor.py in light of the addition of space.py. Namely, Applicative is already implied now.
 * [high] Sugar. CategorySugar: MorphismSugar, ElementSugar. FunctorCategorySugar/MonadSugar
 * [high] Should SimpleMorphism/SimpleElement inherit from the base they are given?
 * [high] Hard question: should list be considered a virtual subclass of ListElement?
