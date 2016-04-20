@@ -2,6 +2,96 @@
 1st attempt at a Pythonic version of the Arrow typeclass.
 I've made notes
 """
+from . import functor
+from ...groups import category
+
+
+class Arrow(category.Category):
+    # first
+    # second
+    # 
+
+
+
+class FunctorArrow(functor_category.FunctorCategory, Arrow):
+    pass
+
+
+class CofunctorArrow(functor_category.CofunctorCategory, Arrow):
+    pass
+
+
+
+class ArrowPromotionError(TypeError, CategoryError):
+    pass
+
+class ArrowSugar(FunctorArrow):
+    """
+    @todo: the first clause is actually part of a Functor. Basically, lets you lift things from Pysk into this Category
+
+
+    Arrow(f)       -->  (-, f,  - )
+    Arrow(x)       -->  (x, -,  - )
+
+
+    Arrow(f) >> g  -->  (-,  compose(f, g),  - )
+    Arrow(f) >> x  -->  (x,       f       ,  - )
+    Arrow(x) >> f  -->  (x,       f       ,  - )
+    Arrow(x) >> y  -->        TypeError
+
+
+    Difficult issues:
+        What to use as initial values?
+        Should function start as 'identity' or NotPassed? 
+    """
+    @pedanticmethod
+    def __rshift__(cls, self, right):
+        """
+        """
+        # ------
+        #   This step belongs to FunctorCategory sugar
+        # -----
+        # If it's already in the Codomain, leave it alone
+        if isinstance(right, cls.Codomain):
+            pass
+        # If it's in the Domain, promote it into the Codomain
+        elif isinstance(right, cls.Domain):
+            right = functor_category.promote(cls, right)
+        else:
+            raise ArrowPromotionCategory(str.format(
+                "Cannot promote object of type '{0}' into '{1}' because it is not in the Domain {2} or Codomain {3} of {4}",
+                right.__class__.__name__, cls.__name__, cls.Domain.__name__,
+                cls.Codomain.__name__, cls.__name__
+            ))
+            
+
+        if cls.is_element(right):
+            return cls(
+
+            )
+        elif cls.is_morphism(right):
+            pass
+        else:
+            raise TypeError(str.format(
+                "I have no idea what to do with '{0}', since it is neither element nor morphism",
+                right.__class__.__name__
+            ))
+
+
+    @pedanticmethod
+    def __lshift__(cls, self, right):
+        """
+        """
+        # Clearer, but slightly less general:
+        # return (self >> right).resolve().extract()
+        
+        # More general, but opaque
+        result = cls.__rshift__(self, right)
+        return cls.extract(cls.compute(result))
+
+
+
+
 from ..functor.functor_category import FunctorCategory
 from ..category.category import Category
 
