@@ -10,7 +10,7 @@ MONADS
 Monads will generally be written as FunctorCategory + extra structure.
 """
 from .functor import Functor
-from ..category.category import Category
+from .category.category import Category
 
 
 class FunctorCategory(Functor, Category):

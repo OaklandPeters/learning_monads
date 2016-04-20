@@ -1,11 +1,8 @@
 """
 Misc notes:
 
-* Rename Functor/Applicative --> Constructor, Decorator, Functor
 * Define each abstract hierarchy one level higher than I need: Groupoid, Group, Arrow
 * Collapsible - Monoid + Traversable, whereas Joinable - Monoid + Foldable
-* Lookup original paper for methods on Arrow - mentioned in the wiki article.
-    Because I don't like Haskell's version
 * After these are drafted, generate a dependency tree image for them
 """
 
@@ -36,3 +33,9 @@ Misc notes:
 #     'Monad',
 #     'Arrow',
 # )
+
+from .space import Space, Morphism, MorphismSugar, Element
+
+__all__ = (
+    Space, Morphism, MorphismSugar, Element
+)

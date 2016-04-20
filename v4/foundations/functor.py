@@ -9,9 +9,9 @@ Thus, a functor is capable of translating element *and* morphisms from one categ
 """
 from abc import abstractclassmethod
 
-from ...support.methods import pedanticmethod, abstractpedanticmethod, abstractclassproperty
-from ...support.typecheckable import TypeCheckableMeta
-from ..category import Category, Element, Morphism
+from ..support.methods import pedanticmethod, abstractpedanticmethod, abstractclassproperty
+from ..support.typecheckable import TypeCheckableMeta
+from .category import Category, Element, Morphism
 
 
 class DomainTranslator:
